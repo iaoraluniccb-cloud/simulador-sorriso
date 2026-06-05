@@ -972,29 +972,33 @@ const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd
 const OPENAI_KEY = _k.join('');
 
 function buildPrompt(treatment, color, extra) {
-  return `Professional dental photo after ${treatment} The teeth are now strikingly ${color}, luminous and perfectly aligned — like polished porcelain. The transformation is dramatic and visible. Everything else in the photo is exactly the same: face, skin, lips, gums, nose, eyes, hair, background, lighting. Only the tooth enamel color has changed. Photorealistic dental result.${extra ? ' ' + extra : ''}`;
+  return `DENTAL SIMULATION — before and after dental treatment. Task: ${treatment} RESULT: the teeth must be visibly and dramatically transformed to ${color}. The change in the teeth must be clearly noticeable — this is the whole point of the simulation. The teeth should look perfectly shaped, smooth, uniform and professional. Face, skin, lips, nose, eyes, hair, background: 100% identical to original, zero changes. ONLY the teeth appearance changes. Photorealistic, high quality dental photography.${extra ? ' ' + extra : ''}`;
+}
+
+function buildProstheticPrompt(color, extra) {
+  return `DENTAL SIMULATION — full prosthetic replacement. The original teeth are completely replaced by a brand new full dental prosthesis. The new teeth are: perfectly uniform, symmetrical, well-shaped, professional-looking, color ${color}. The new smile looks completely different and dramatically improved compared to the original. Face, skin, lips, nose, eyes, hair, background: 100% identical, zero changes. ONLY the teeth are replaced. Photorealistic dental prosthesis result.${extra ? ' ' + extra : ''}`;
 }
 
 const STYLE_PROMPTS = {
-  faceta_bl1:    buildPrompt('Apply bright white porcelain veneers (VITA BL1). Align teeth, smooth shape, ceramic texture.', 'pure brilliant white RGB(254,254,255)', ''),
-  faceta_bl2:    buildPrompt('Apply bright white ceramic veneers (VITA BL2). Align and slightly lengthen teeth.', 'bright white RGB(252,252,254)', ''),
-  faceta_bl3:    buildPrompt('Apply natural bright white veneers (VITA BL3). Align teeth.', 'bright natural white RGB(250,250,252)', ''),
-  faceta_a1:     buildPrompt('Apply ivory ceramic veneers (VITA A1). Align teeth.', 'warm ivory RGB(248,244,232)', ''),
-  faceta_b1:     buildPrompt('Apply pinkish-white ceramic veneers (VITA B1). Align teeth.', 'soft pink-white RGB(250,245,242)', ''),
-  lente_contato: buildPrompt('Apply ultra-thin contact lens veneers. Keep original tooth shape.', 'pure white RGB(255,255,255)', ''),
-  protese_bl3:   buildPrompt('Replace all teeth with a full prosthesis (VITA BL3). Uniform, symmetrical, aligned teeth.', 'bright bleached white RGB(252,252,255)', ''),
-  protese_bl4:   buildPrompt('Replace all teeth with full prosthesis (VITA BL4). Aligned, symmetrical.', 'natural white RGB(250,249,248)', ''),
-  protese_a1:    buildPrompt('Replace all teeth with full prosthesis (VITA A1). Ideal aligned shape.', 'warm ivory RGB(248,244,232)', ''),
-  protese_a2:    buildPrompt('Replace all teeth with full prosthesis (VITA A2). Natural ideal shape.', 'classic warm ivory RGB(243,236,216)', ''),
-  protese_a3:    buildPrompt('Replace all teeth with full prosthesis (VITA A3).', 'warm golden RGB(234,222,192)', ''),
-  protese_b1:    buildPrompt('Replace all teeth with full prosthesis (VITA B1).', 'light pink-white RGB(250,245,242)', ''),
-  protese_b2:    buildPrompt('Replace all teeth with full prosthesis (VITA B2).', 'warm pinkish RGB(245,236,228)', ''),
-  protese_c1:    buildPrompt('Replace all teeth with full prosthesis (VITA C1).', 'cool light gray RGB(240,237,232)', ''),
-  protese_d2:    buildPrompt('Replace all teeth with full prosthesis (VITA D2).', 'warm ochre RGB(238,226,198)', ''),
-  clareamento:   buildPrompt('Whiten the teeth only. Do not change tooth shape or size.', 'brilliant clean white RGB(248,245,235)', ''),
-  ortodontia:    buildPrompt('Align and straighten all teeth. Do not change tooth color.', 'same original color', ''),
-  aumento_coroa: buildPrompt('Show more of the tooth crown by raising the gum line slightly. Do not change color.', 'same original color', ''),
-  harmonizacao:  buildPrompt('Align teeth and whiten them. Keep natural proportions.', 'bright natural white RGB(251,251,253)', ''),
+  faceta_bl1:    buildPrompt('porcelain veneers VITA BL1 — align teeth, smooth ceramic shape, dramatic whitening.', 'pure brilliant white RGB(254,254,255)', ''),
+  faceta_bl2:    buildPrompt('ceramic veneers VITA BL2 — align and slightly lengthen teeth.', 'bright white RGB(252,252,254)', ''),
+  faceta_bl3:    buildPrompt('natural veneers VITA BL3 — align teeth, smooth shape.', 'bright natural white RGB(250,250,252)', ''),
+  faceta_a1:     buildPrompt('ivory ceramic veneers VITA A1 — align teeth.', 'warm ivory white RGB(248,244,232)', ''),
+  faceta_b1:     buildPrompt('pinkish ceramic veneers VITA B1 — align teeth.', 'soft pink-white RGB(250,245,242)', ''),
+  lente_contato: buildPrompt('ultra-thin contact lens veneers — keep original shape, whiten dramatically.', 'pure brilliant white RGB(255,255,255)', ''),
+  protese_bl3:   buildProstheticPrompt('bright bleached white VITA BL3 RGB(252,252,255)', ''),
+  protese_bl4:   buildProstheticPrompt('natural white VITA BL4 RGB(250,249,248)', ''),
+  protese_a1:    buildProstheticPrompt('warm ivory VITA A1 RGB(248,244,232)', ''),
+  protese_a2:    buildProstheticPrompt('classic warm ivory VITA A2 RGB(243,236,216)', ''),
+  protese_a3:    buildProstheticPrompt('warm golden ivory VITA A3 RGB(234,222,192)', ''),
+  protese_b1:    buildProstheticPrompt('light pink-white VITA B1 RGB(250,245,242)', ''),
+  protese_b2:    buildProstheticPrompt('warm pinkish VITA B2 RGB(245,236,228)', ''),
+  protese_c1:    buildProstheticPrompt('cool light gray VITA C1 RGB(240,237,232)', ''),
+  protese_d2:    buildProstheticPrompt('warm ochre VITA D2 RGB(238,226,198)', ''),
+  clareamento:   buildPrompt('professional teeth whitening — dramatically whiter, no shape change.', 'brilliant clean white RGB(252,250,240)', ''),
+  ortodontia:    buildPrompt('orthodontic alignment — perfectly straight and aligned teeth, same original color.', 'same original natural color', ''),
+  aumento_coroa: buildPrompt('crown lengthening — gum line raised slightly showing more tooth, same color.', 'same original natural color', ''),
+  harmonizacao:  buildPrompt('smile harmonization — align and whiten teeth for a balanced smile.', 'bright natural white RGB(251,251,253)', ''),
 };
 
 async function detectTeethBox(imageDataURL) {
