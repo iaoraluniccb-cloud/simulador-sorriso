@@ -972,7 +972,7 @@ const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd
 const OPENAI_KEY = _k.join('');
 
 function buildPrompt(treatment, color, extra) {
-  return `Dental treatment result: ${treatment} Make the teeth ${color} — dramatically whiter, bright and natural-looking like porcelain. Teeth should be visibly transformed. Face, skin, lips, gums, nose, eyes, hair and background must be 100% identical to the original photo. Only teeth color changes. Photorealistic.${extra ? ' ' + extra : ''}`;
+  return `Edit only the masked region (teeth area): ${treatment} Color: ${color}. Result must look photorealistic, like a real dental photo. Keep exact same lighting, skin tone, lip shape and face. Only the teeth inside the mask change.${extra ? ' ' + extra : ''}`;
 }
 
 const STYLE_PROMPTS = {
@@ -996,6 +996,24 @@ const STYLE_PROMPTS = {
   aumento_coroa: buildPrompt('Show more of the tooth crown by raising the gum line slightly. Do not change color.', 'same original color', ''),
   harmonizacao:  buildPrompt('Align teeth and whiten them. Keep natural proportions.', 'bright natural white RGB(251,251,253)', ''),
 };
+
+// Gera máscara PNG RGBA 1024x1024: pixels transparentes = área editável (dentes), opacos = bloqueado
+async function buildTeethMask(box, W, H) {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  // Tudo opaco preto (bloqueado)
+  ctx.fillStyle = 'rgba(0,0,0,255)';
+  ctx.fillRect(0, 0, W, H);
+  // Área dos dentes: transparente (editável) com margem extra
+  const pad = 24;
+  const x = Math.max(0, box.x - pad);
+  const y = Math.max(0, box.y - pad);
+  const w = Math.min(W - x, box.w + pad * 2);
+  const h = Math.min(H - y, box.h + pad * 2);
+  ctx.clearRect(x, y, w, h);
+  return new Promise(resolve => c.toBlob(resolve, 'image/png'));
+}
 
 async function detectTeethBox(imageDataURL) {
   // Detecta dentes via frações relativas (mais robusto que coordenadas absolutas)
@@ -1156,12 +1174,16 @@ async function generateSmile() {
     setProgress(true, 38, 'Detectando região dos dentes...');
     const teethBox = await detectTeethBox(imageDataURL); // coords no espaço 1024x1024
 
+    // Gera máscara RGBA: transparente na área dos dentes (editável), opaco no resto
+    const maskBlob = await buildTeethMask(teethBox, 1024, 1024);
+
     const formData = new FormData();
     formData.append('model', 'gpt-image-2');
     formData.append('prompt', fullPrompt);
     formData.append('n', '1');
     formData.append('size', '1024x1024');
     formData.append('image', pngBlob, 'smile.png');
+    formData.append('mask', maskBlob, 'mask.png');
 
     const response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
