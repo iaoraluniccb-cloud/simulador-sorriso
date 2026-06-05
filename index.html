@@ -998,119 +998,91 @@ const STYLE_PROMPTS = {
 };
 
 async function detectTeethBox(imageDataURL) {
+  // Detecta coordenadas dos dentes na imagem (que já está em 1024x1024)
   try {
-    const img = await new Promise((res, rej) => {
-      const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = imageDataURL;
-    });
-    const W = img.naturalWidth, H = img.naturalHeight;
     const b64 = imageDataURL.split(',')[1];
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 120,
+        model: 'gpt-4o', max_tokens: 100,
         messages: [{ role: 'user', content: [
-          { type: 'text', text: `Image is ${W}x${H} px. Find the teeth visible inside the open mouth. Return ONLY JSON: {"x":number,"y":number,"w":number,"h":number} in pixels (top-left origin). Include all visible tooth surfaces with a small margin.` },
+          { type: 'text', text: 'This image is 1024x1024 px. Locate the teeth visible inside the open mouth. Return ONLY valid JSON: {"x":number,"y":number,"w":number,"h":number} in pixels. x,y = top-left corner. No extra text.' },
           { type: 'image_url', image_url: { url: `data:image/png;base64,${b64}`, detail: 'high' } }
         ]}]
       })
     });
     if (!resp.ok) throw new Error('detect failed');
     const rj = await resp.json();
-    let text = rj.choices[0].message.content.trim();
-    if (text.startsWith('```')) { text = text.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim(); }
-    return { ...JSON.parse(text), W, H };
+    let text = rj.choices[0].message.content.trim().replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim();
+    return JSON.parse(text);
   } catch(e) {
     console.warn('Teeth detection failed:', e);
     return null;
   }
 }
 
-async function compositeTeeth(originalURL, aiURL, box) {
+async function compositeTeeth(origDataURL, aiDataURL, box) {
+  // origDataURL = foto original do paciente (qualquer resolução)
+  // aiDataURL   = resultado 1024x1024 da IA (com letterbox preto nas bordas)
+  // box         = {x,y,w,h} dos dentes no espaço 1024x1024
   const [origImg, aiImg] = await Promise.all([
-    new Promise((res,rej) => { const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=originalURL; }),
-    new Promise((res,rej) => { const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=aiURL; }),
+    new Promise((r,e)=>{ const i=new Image(); i.onload=()=>r(i); i.onerror=e; i.src=origDataURL; }),
+    new Promise((r,e)=>{ const i=new Image(); i.onload=()=>r(i); i.onerror=e; i.src=aiDataURL; }),
   ]);
-  const W = origImg.naturalWidth, H = origImg.naturalHeight;
-  const AW = aiImg.naturalWidth, AH = aiImg.naturalHeight;
 
-  // Canvas principal com foto original
+  const OW = origImg.naturalWidth, OH = origImg.naturalHeight;
+  const lb = _lastLetterbox; // { ox, oy, dw, dh } no espaço 1024x1024
+
+  // Canvas final = dimensões da foto original
   const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
+  canvas.width = OW; canvas.height = OH;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(origImg, 0, 0, W, H);
+  ctx.drawImage(origImg, 0, 0); // base: foto 100% original
 
-  if (!box) {
-    // Sem detecção: usa IA sem bordas pretas (recorta letterbox)
-    const lb = _lastLetterbox;
-    if (lb) {
-      ctx.drawImage(aiImg, lb.ox, lb.oy, lb.dw, lb.dh, 0, 0, W, H);
-    } else {
-      ctx.drawImage(aiImg, 0, 0, W, H);
-    }
-    return canvas.toDataURL('image/png');
-  }
+  if (!box || !lb) return canvas.toDataURL('image/png');
 
-  // box está no espaço 1024x1024 com letterbox
-  // _lastLetterbox: { ox, oy, dw, dh } = área válida dentro do 1024x1024
-  const lb = _lastLetterbox || { ox:0, oy:0, dw:AW, dh:AH, maxW:AW, maxH:AH };
-  // Converte box do espaço letterboxed para espaço da imagem real (sem bordas)
-  // coord_real = (coord_letterbox - offset) / escala_letterbox * tamanho_original
-  const lbScaleX = lb.dw / W;  // pixels letterboxed por pixel original
-  const lbScaleY = lb.dh / H;
-  const pad = Math.round(lb.dw * 0.018);
-  // Região no espaço letterboxed
-  const bx = Math.max(lb.ox, box.x - pad);
-  const by = Math.max(lb.oy, box.y - pad);
-  const bw = Math.min(lb.ox + lb.dw - bx, box.w + pad * 2);
-  const bh = Math.min(lb.oy + lb.dh - by, box.h + pad * 2);
-  // Região no espaço original (sem letterbox)
-  const rx = Math.round((bx - lb.ox) / lbScaleX);
-  const ry = Math.round((by - lb.oy) / lbScaleY);
-  const rw = Math.round(bw / lbScaleX);
-  const rh = Math.round(bh / lbScaleY);
-  // Source na IA (letterboxed)
-  const sx = bx, sy = by, sw = bw, sh = bh;
+  // Área dos dentes no espaço 1024x1024 (com padding)
+  const pad = 14;
+  const tx = Math.max(lb.ox, box.x - pad);
+  const ty = Math.max(lb.oy, box.y - pad);
+  const tw = Math.min(lb.ox + lb.dw - tx, box.w + pad * 2);
+  const th = Math.min(lb.oy + lb.dh - ty, box.h + pad * 2);
 
-  // --- Extrai região dos dentes da IA ---
+  // Converte para espaço da foto original
+  // lb.ox/oy = offset do letterbox, lb.dw/dh = área válida dentro de 1024x1024
+  const rx = Math.round((tx - lb.ox) / lb.dw * OW);
+  const ry = Math.round((ty - lb.oy) / lb.dh * OH);
+  const rw = Math.round(tw / lb.dw * OW);
+  const rh = Math.round(th / lb.dh * OH);
+
+  // Extrai patch dos dentes da imagem da IA
   const patch = document.createElement('canvas');
   patch.width = rw; patch.height = rh;
   const pctx = patch.getContext('2d');
-  pctx.drawImage(aiImg, sx, sy, sw, sh, 0, 0, rw, rh);
+  pctx.drawImage(aiImg, tx, ty, tw, th, 0, 0, rw, rh);
 
-  // --- Máscara com gradiente em todos os 4 lados (feather uniforme) ---
-  const alphaCanvas = document.createElement('canvas');
-  alphaCanvas.width = rw; alphaCanvas.height = rh;
-  const actx = alphaCanvas.getContext('2d');
-  const f = Math.round(Math.min(rw, rh) * 0.18); // feather 18% da menor dimensão
-  // Gradiente esquerda
-  let g = actx.createLinearGradient(0,0,f,0);
-  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)');
-  actx.fillStyle=g; actx.fillRect(0,0,f,rh);
-  // Gradiente direita
-  g = actx.createLinearGradient(rw-f,0,rw,0);
-  g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
-  actx.fillStyle=g; actx.fillRect(rw-f,0,f,rh);
-  // Gradiente topo
-  g = actx.createLinearGradient(0,0,0,f);
-  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)');
-  actx.fillStyle=g; actx.fillRect(0,0,rw,f);
-  // Gradiente base
-  g = actx.createLinearGradient(0,rh-f,0,rh);
-  g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
-  actx.fillStyle=g; actx.fillRect(0,rh-f,rw,f);
-  // Centro sólido
-  actx.fillStyle='rgba(0,0,0,1)';
-  actx.fillRect(f,f,rw-f*2,rh-f*2);
-
-  // Aplica alpha ao patch via destination-in
+  // Blend suave nas bordas (feather)
+  const f = Math.round(Math.min(rw, rh) * 0.15);
+  const mask = document.createElement('canvas');
+  mask.width = rw; mask.height = rh;
+  const mctx = mask.getContext('2d');
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0, 0, rw, rh);
+  // Gradientes nas 4 bordas
+  [[0,0,f,0],[rw-f,0,rw,0],[0,0,0,f],[0,rh-f,0,rh]].forEach(([x0,y0,x1,y1],i) => {
+    const g2 = mctx.createLinearGradient(x0,y0,x1,y1);
+    g2.addColorStop(0,'rgba(0,0,0,0)'); g2.addColorStop(1,'rgba(0,0,0,1)');
+    mctx.fillStyle = g2;
+    if (i===0) mctx.fillRect(0,0,f,rh);
+    else if (i===1) mctx.fillRect(rw-f,0,f,rh);
+    else if (i===2) mctx.fillRect(0,0,rw,f);
+    else mctx.fillRect(0,rh-f,rw,f);
+  });
   pctx.globalCompositeOperation = 'destination-in';
-  pctx.drawImage(alphaCanvas, 0, 0);
+  pctx.drawImage(mask, 0, 0);
 
-  // --- Cola patch sobre a foto original ---
   ctx.drawImage(patch, rx, ry);
-
   return canvas.toDataURL('image/png');
 }
 
