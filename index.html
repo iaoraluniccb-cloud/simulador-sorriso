@@ -1028,47 +1028,61 @@ async function detectTeethBox(imageDataURL) {
 }
 
 async function compositeTeeth(originalURL, aiURL, box) {
-  // Carrega ambas as imagens
   const [origImg, aiImg] = await Promise.all([
     new Promise((res,rej) => { const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=originalURL; }),
     new Promise((res,rej) => { const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=aiURL; }),
   ]);
   const W = origImg.naturalWidth, H = origImg.naturalHeight;
+  const AW = aiImg.naturalWidth, AH = aiImg.naturalHeight;
+
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Base: foto original completa
+  // 1. Base: foto original 100% intacta
   ctx.drawImage(origImg, 0, 0, W, H);
 
   if (box) {
-    // Escala a região da IA para o tamanho original (a IA retorna 1024x1024)
-    const scaleX = W / aiImg.naturalWidth;
-    const scaleY = H / aiImg.naturalHeight;
+    // box.x/y/w/h estão no espaço da imagem original (W×H)
+    // A IA retorna AW×AH — precisamos mapear box para o espaço da IA
     const pad = Math.round(W * 0.015);
+    // Região no espaço original
     const rx = Math.max(0, box.x - pad);
     const ry = Math.max(0, box.y - pad);
     const rw = Math.min(W - rx, box.w + pad * 2);
     const rh = Math.min(H - ry, box.h + pad * 2);
 
-    // Cria clip com bordas suaves (feather) para blend natural
-    ctx.save();
-    const feather = Math.round(W * 0.008);
-    ctx.filter = `blur(${feather}px)`;
-    ctx.beginPath();
-    ctx.roundRect(rx, ry, rw, rh, feather * 2);
-    ctx.clip();
-    ctx.filter = 'none';
+    // Região equivalente no espaço da IA (escala proporcional)
+    const sx = (rx / W) * AW;
+    const sy = (ry / H) * AH;
+    const sw = (rw / W) * AW;
+    const sh = (rh / H) * AH;
 
-    // Cola só a região dos dentes do resultado da IA
-    ctx.drawImage(
-      aiImg,
-      rx / scaleX, ry / scaleY, rw / scaleX, rh / scaleY,  // source no AI img
-      rx, ry, rw, rh                                          // dest na canvas
-    );
-    ctx.restore();
+    // 2. Cria offscreen com feather para blend suave nas bordas
+    const off = document.createElement('canvas');
+    off.width = W; off.height = H;
+    const octx = off.getContext('2d');
+    // Desenha a IA escalada para o tamanho original
+    octx.drawImage(aiImg, sx, sy, sw, sh, rx, ry, rw, rh);
+
+    // 3. Aplica a região da IA com feather: desenha em canvas extra, blur, recorta
+    const feather = Math.round(Math.min(rw, rh) * 0.12);
+    const mask = document.createElement('canvas');
+    mask.width = W; mask.height = H;
+    const mctx = mask.getContext('2d');
+    mctx.filter = `blur(${feather}px)`;
+    mctx.fillStyle = 'white';
+    mctx.fillRect(rx + feather, ry + feather, rw - feather*2, rh - feather*2);
+    mctx.filter = 'none';
+
+    // Usa o mask para composite: multiplica alpha
+    octx.globalCompositeOperation = 'destination-in';
+    octx.drawImage(mask, 0, 0);
+
+    // 4. Sobrepõe a região processada na foto original
+    ctx.drawImage(off, 0, 0);
   } else {
-    // Sem box: usa o resultado da IA completo (fallback)
+    // Fallback sem box: IA completa
     ctx.drawImage(aiImg, 0, 0, W, H);
   }
 
