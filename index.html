@@ -993,7 +993,7 @@ const STYLE_PROMPTS = {
   harmonizacao: "Dental photo retouching. Modify ONLY the teeth — align, whiten to VITA BL2 RGB(251,251,253), lengthen slightly. Face, skin, lips: completely unchanged.",
 };
 
-const PRESERVE = " CRITICAL RULES — any violation makes this result invalid: (1) The FACE must be 100% identical — same skin, same wrinkles, same eyes, same nose, same lips shape, same everything outside the teeth. (2) Modify ONLY the visible tooth enamel surfaces inside the open mouth. (3) Keep mouth open — do NOT close lips. (4) Individual teeth must be distinguishable with inter-dental grooves. (5) Output must look like a real unedited photograph except for the teeth.";
+const PRESERVE = " STRICT RULES — violating any rule makes the result completely invalid and unusable: RULE 1 (most important): The entire face must be BYTE-FOR-BYTE IDENTICAL to the input — same skin texture, same wrinkles, same pores, same eyes, same eyebrows, same nose, same lips outline, same hair, same glasses if present, same background, same lighting on face. RULE 2: Edit ONLY the tooth enamel surfaces visible between the parted lips. RULE 3: Do NOT move, reshape, or retouch lips, gums border, chin, cheeks, or any facial feature. RULE 4: Keep the mouth open exactly as in the original. RULE 5: The output must be photorealistic — indistinguishable from a real photograph.";
 
 async function generateSmile() {
   if (!originalFile) return showError('Envie a foto do paciente primeiro.');
@@ -1041,15 +1041,16 @@ async function generateSmile() {
     const extra = document.getElementById('extraPrompt').value.trim();
     const fullPrompt = extra ? prompt + ' Additional instructions: ' + extra : prompt;
 
-    // Converte para PNG blob para enviar
-    const pngBlob = await resizeImage(originalFile, 1024, 1024);
+    // Cria imagem com máscara: região dos dentes transparente (editável pela IA)
+    setProgress(true, 40, 'Criando máscara dos dentes...');
+    const maskedBlob = await createDentalMask(originalFile);
 
     const formData = new FormData();
     formData.append('model', 'gpt-image-2');
     formData.append('prompt', fullPrompt);
     formData.append('n', '1');
     formData.append('size', '1024x1024');
-    formData.append('image', pngBlob, 'smile.png');
+    formData.append('image', maskedBlob, 'smile.png');
 
     const response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
@@ -1303,6 +1304,104 @@ function renderAnalise(data) {
         <span class="rec-sub">${r.sub}</span>
         ${r.priority ? '<span class="rec-priority-tag">Indicado</span>' : ''}
       </div>`;
+  });
+}
+
+// Cria máscara RGBA: área dos dentes fica transparente (editável pela IA)
+// A IA gpt-image-2 edita apenas os pixels transparentes da imagem
+function createDentalMask(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const SIZE = 1024;
+      const c = document.createElement('canvas');
+      c.width = SIZE; c.height = SIZE;
+      const ctx = c.getContext('2d');
+
+      // Escala proporcional centrada
+      const scale = Math.min(SIZE / img.width, SIZE / img.height);
+      const sw = Math.round(img.width * scale);
+      const sh = Math.round(img.height * scale);
+      const ox = Math.round((SIZE - sw) / 2);
+      const oy = Math.round((SIZE - sh) / 2);
+
+      ctx.fillStyle = '#888888';
+      ctx.fillRect(0, 0, SIZE, SIZE);
+      ctx.drawImage(img, ox, oy, sw, sh);
+
+      // Pega pixels para detectar região dos dentes
+      const imgData = ctx.getImageData(0, 0, SIZE, SIZE);
+      const data = imgData.data;
+
+      // Região de busca: terço inferior do rosto (onde fica a boca)
+      // Aproximadamente entre 55% e 85% da altura da imagem
+      const yStart = Math.round(oy + sh * 0.52);
+      const yEnd   = Math.round(oy + sh * 0.82);
+      const xStart = Math.round(ox + sw * 0.15);
+      const xEnd   = Math.round(ox + sw * 0.85);
+
+      // Detecta pixels que parecem dentes: muito claros (R>160, G>140, B>120)
+      let teethPixels = [];
+      for (let y = yStart; y < yEnd; y++) {
+        for (let x = xStart; x < xEnd; x++) {
+          const i = (y * SIZE + x) * 4;
+          const r = data[i], g = data[i+1], b = data[i+2];
+          if (r > 160 && g > 130 && b > 100 && r > b + 10) {
+            teethPixels.push({x, y});
+          }
+        }
+      }
+
+      // Se encontrou dentes, calcula bounding box e expande levemente
+      let maskY1, maskY2, maskX1, maskX2;
+      if (teethPixels.length > 50) {
+        const xs = teethPixels.map(p => p.x);
+        const ys = teethPixels.map(p => p.y);
+        const pad = Math.round(sh * 0.04);
+        maskX1 = Math.max(ox, Math.min(...xs) - pad);
+        maskX2 = Math.min(ox + sw, Math.max(...xs) + pad);
+        maskY1 = Math.max(oy, Math.min(...ys) - pad);
+        maskY2 = Math.min(oy + sh, Math.max(...ys) + pad * 2);
+      } else {
+        // Fallback: usa região fixa da boca
+        maskX1 = Math.round(ox + sw * 0.20);
+        maskX2 = Math.round(ox + sw * 0.80);
+        maskY1 = Math.round(oy + sh * 0.58);
+        maskY2 = Math.round(oy + sh * 0.78);
+      }
+
+      // Cria canvas RGBA com máscara elíptica suavizada
+      const maskedCanvas = document.createElement('canvas');
+      maskedCanvas.width = SIZE; maskedCanvas.height = SIZE;
+      const mCtx = maskedCanvas.getContext('2d');
+
+      // Copia imagem original
+      mCtx.drawImage(c, 0, 0);
+
+      // Apaga (transparente) a região elíptica dos dentes
+      mCtx.globalCompositeOperation = 'destination-out';
+      const cx = (maskX1 + maskX2) / 2;
+      const cy = (maskY1 + maskY2) / 2;
+      const rx = (maskX2 - maskX1) / 2;
+      const ry = (maskY2 - maskY1) / 2;
+
+      // Gradiente para bordas suaves
+      const grad = mCtx.createRadialGradient(cx, cy, Math.min(rx, ry) * 0.5, cx, cy, Math.max(rx, ry));
+      grad.addColorStop(0, 'rgba(0,0,0,1)');
+      grad.addColorStop(0.7, 'rgba(0,0,0,0.9)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      mCtx.fillStyle = grad;
+      mCtx.beginPath();
+      mCtx.ellipse(cx, cy, rx * 1.1, ry * 1.1, 0, 0, Math.PI * 2);
+      mCtx.fill();
+      mCtx.globalCompositeOperation = 'source-over';
+
+      maskedCanvas.toBlob(resolve, 'image/png', 0.95);
+    };
+    img.onerror = reject;
+    img.src = url;
   });
 }
 
