@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+*.log
+*.jpg
+*.jpeg
+*.png
+*.html
+!index.html
+debug_*
+server_*.txt
+test_*.txt
+install_*.txt
+*.bat

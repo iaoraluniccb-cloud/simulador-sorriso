@@ -1,0 +1,78 @@
+{
+  "scores": {
+    "simetria": 65,
+    "clareamento": 34,
+    "harmonia": 66,
+    "curvatura": 65,
+    "gengival": 71,
+    "estetica": 70
+  },
+  "detalhes": [
+    {
+      "nome": "Linha Média",
+      "status": "att"
+    },
+    {
+      "nome": "Plano Incisal",
+      "status": "att"
+    },
+    {
+      "nome": "Curva do Sorriso",
+      "status": "ok"
+    },
+    {
+      "nome": "Proporção Áurea",
+      "status": "att"
+    },
+    {
+      "nome": "Corredores Bucais",
+      "status": "att"
+    },
+    {
+      "nome": "Suporte Labial",
+      "status": "ok"
+    },
+    {
+      "nome": "Equilíbrio Gengival",
+      "status": "att"
+    }
+  ],
+  "recomendacoes": [
+    {
+      "icon": "💎",
+      "nome": "Facetas Cerâmicas",
+      "sub": "BL1 / BL2",
+      "priority": true
+    },
+    {
+      "icon": "✨",
+      "nome": "Clareamento",
+      "sub": "Profissional",
+      "priority": false
+    },
+    {
+      "icon": "😁",
+      "nome": "Ortodontia",
+      "sub": "Alinhamento",
+      "priority": false
+    },
+    {
+      "icon": "🦷",
+      "nome": "Prótese Total",
+      "sub": "A1 / A2 / BL3",
+      "priority": false
+    },
+    {
+      "icon": "📐",
+      "nome": "Aumento de Coroa",
+      "sub": "Gengivoplastia",
+      "priority": false
+    },
+    {
+      "icon": "🩺",
+      "nome": "Profilaxia",
+      "sub": "Higiene Periodontal",
+      "priority": false
+    }
+  ]
+}

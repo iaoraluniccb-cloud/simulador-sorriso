@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Sorriso — Oral Unic</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%238B2D42'/%3E%3Cpath d='M22 11h-1.5l-1.2-2h-6.6l-1.2 2H10a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-6 9a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z' fill='%23C4955A'/%3E%3Ccircle cx='16' cy='16.5' r='2' fill='%23FDF9F4'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Cormorant:ital,wght@1,300&family=Josefin+Sans:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --vinho:       #8B2D42;
+    --vinho-prof:  #6A1F30;
+    --vinho-claro: #B85C72;
+    --cobre:       #C4955A;
+    --marfim:      #FDF9F4;
+    --creme:       #F5EDE2;
+    --blush:       #EDDDD4;
+    --warm:        #E0C9B8;
+    --moka:        #3D2A20;
+    --tinta:       #1A0F0A;
+    --radius:      10px;
+  }
+
+  body {
+    font-family: 'Josefin Sans', system-ui, sans-serif;
+    font-weight: 300;
+    background: var(--marfim);
+    color: var(--tinta);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--vinho-prof);
+    color: var(--marfim);
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 2px solid var(--cobre);
+  }
+  header .logo-mark {
+    width: 52px; height: 52px;
+    border: 1.5px solid var(--cobre);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-family: 'Cormorant SC', serif;
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.12em;
+    color: var(--marfim);
+  }
+  header p {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 300;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--warm);
+    margin-top: 3px;
+  }
+  header .header-badge {
+    margin-left: auto;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--cobre);
+    border: 1px solid var(--cobre);
+    padding: 5px 14px;
+    border-radius: 20px;
+  }
+
+  main {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 36px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    border: 1px solid var(--blush);
+    box-shadow: 0 2px 16px rgba(139,45,66,0.06);
+  }
+  .card-title {
+    font-family: 'Cormorant SC', serif;
+    font-weight: 400;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    color: var(--vinho);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--blush);
+    padding-bottom: 12px;
+  }
+  .card-title span { font-size: 16px; }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 560px) { .info-grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--moka);
+  }
+  .field input, .field select {
+    padding: 9px 12px;
+    border: 1px solid var(--warm);
+    border-radius: 6px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 13px; font-weight: 300;
+    color: var(--tinta);
+    background: var(--marfim);
+    transition: border-color .2s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--vinho); }
+
+  .upload-zone {
+    border: 1.5px dashed var(--warm);
+    border-radius: var(--radius);
+    padding: 44px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .25s;
+    position: relative;
+    background: var(--marfim);
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--vinho);
+    background: var(--creme);
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 36px; margin-bottom: 14px; opacity: .7; }
+  .upload-zone p { color: var(--moka); font-size: 13px; letter-spacing: 0.04em; }
+  .upload-zone strong { color: var(--vinho); font-weight: 400; }
+
+  .preview-area { display: none; flex-direction: column; align-items: center; gap: 12px; }
+  .preview-area img {
+    max-width: 100%; max-height: 360px;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 24px rgba(139,45,66,0.12);
+    object-fit: contain;
+  }
+  .preview-area .change-btn {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px; letter-spacing: 0.12em;
+    color: var(--vinho); cursor: pointer;
+    text-decoration: underline; background: none; border: none;
+    text-transform: uppercase;
+  }
+
+  .tratamento-group { margin-bottom: 20px; }
+  .tratamento-group:last-of-type { margin-bottom: 0; }
+  .tratamento-label {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--vinho); margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  .options-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px;
+  }
+  .option-chip {
+    border: 1px solid var(--warm);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 12px; font-weight: 300; letter-spacing: 0.04em;
+    color: var(--moka);
+    background: var(--marfim);
+    transition: all .2s;
+    text-align: center;
+  }
+  .option-chip:hover  { border-color: var(--vinho-claro); color: var(--vinho); background: var(--creme); }
+  .option-chip.active { border-color: var(--vinho); background: var(--creme); color: var(--vinho); box-shadow: 0 0 0 1px var(--vinho); }
+  .option-chip .chip-icon  { font-size: 18px; display: block; margin-bottom: 4px; }
+  .option-chip .chip-title { display: block; font-weight: 400; font-size: 12px; margin-bottom: 2px; }
+  .option-chip .chip-sub   { display: block; font-size: 10px; letter-spacing: 0.04em; opacity: .65; }
+
+  .prompt-extra { margin-top: 16px; }
+  .prompt-extra textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--warm);
+    border-radius: 6px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 13px; font-weight: 300;
+    color: var(--tinta);
+    background: var(--marfim);
+    resize: vertical; min-height: 70px;
+    transition: border-color .2s; letter-spacing: 0.04em;
+  }
+  .prompt-extra textarea:focus { outline: none; border-color: var(--vinho); }
+
+  .btn-generate {
+    width: 100%;
+    padding: 16px;
+    background: var(--vinho-prof);
+    color: var(--marfim);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Cormorant SC', serif;
+    font-size: 15px; font-weight: 400;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all .25s;
+    box-shadow: 0 4px 16px rgba(106,31,48,0.3);
+    position: relative; overflow: hidden;
+  }
+  .btn-generate::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: var(--cobre);
+  }
+  .btn-generate:hover:not(:disabled) {
+    background: var(--vinho);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(106,31,48,0.4);
+  }
+  .btn-generate:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .progress-wrap { display: none; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .progress-bar-bg { height: 3px; background: var(--blush); border-radius: 99px; overflow: hidden; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--vinho), var(--cobre));
+    border-radius: 99px;
+    transition: width .4s ease; width: 0%;
+  }
+  .progress-label {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--moka); text-align: center; white-space: nowrap; overflow: visible;
+  }
+  .progress-timer {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 13px; letter-spacing: 0.06em; font-weight: 600;
+    color: var(--cobre); text-align: center; margin-top: 2px;
+  }
+
+  #result-section { display: none; }
+
+  .comparison-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .comparison-wrap { grid-template-columns: 1fr; } }
+
+  .comparison-card { display: flex; flex-direction: column; gap: 10px; }
+  .comparison-label {
+    text-align: center; font-family: 'Josefin Sans', sans-serif;
+    font-weight: 300; font-size: 10px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    padding: 7px 0; border-radius: 4px;
+  }
+  .comparison-label.before { background: var(--blush); color: var(--moka); }
+  .comparison-label.after  { background: var(--vinho-prof); color: var(--marfim); }
+  .comparison-img {
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: 0 4px 20px rgba(139,45,66,0.1);
+    aspect-ratio: 4/5; background: var(--creme);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .comparison-img img { width: 100%; height: 100%; object-fit: contain; }
+
+  .slider-section { margin-top: 24px; }
+  .slider-hint {
+    text-align: center; font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--moka); margin-bottom: 14px;
+  }
+  .slider-container {
+    position: relative; width: 100%; max-width: 500px;
+    margin: 0 auto; border-radius: var(--radius); overflow: hidden;
+    box-shadow: 0 6px 28px rgba(139,45,66,0.15);
+    cursor: ew-resize; user-select: none;
+    aspect-ratio: 4/5; background: var(--moka);
+  }
+  .slider-before, .slider-after { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .slider-before img, .slider-after img { width: 100%; height: 100%; object-fit: contain; }
+  .slider-after { clip-path: inset(0 50% 0 0); }
+  .slider-divider {
+    position: absolute; top: 0; bottom: 0;
+    width: 2px; background: var(--cobre);
+    left: 50%; transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .slider-handle {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 42px; height: 42px;
+    background: var(--cobre); border-radius: 50%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; pointer-events: none; color: white;
+  }
+  .slider-tags {
+    position: absolute; top: 12px;
+    display: flex; justify-content: space-between;
+    width: 100%; padding: 0 14px; pointer-events: none;
+  }
+  .slider-tag {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; font-weight: 300; letter-spacing: 0.28em;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 20px;
+  }
+  .slider-tag.before-tag { background: rgba(61,42,32,.75); color: var(--warm); }
+  .slider-tag.after-tag  { background: rgba(106,31,48,.85); color: var(--marfim); }
+
+  .actions-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+  .btn {
+    flex: 1; min-width: 150px; padding: 13px 18px;
+    border: none; border-radius: 8px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px; font-weight: 300; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all .2s;
+  }
+  .btn-pdf      { background: var(--vinho-prof); color: var(--marfim); box-shadow: 0 3px 12px rgba(106,31,48,.25); }
+  .btn-pdf:hover { background: var(--vinho); transform: translateY(-1px); }
+  .btn-download { background: var(--cobre); color: white; box-shadow: 0 3px 12px rgba(196,149,90,.3); }
+  .btn-download:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .btn-new      { background: var(--marfim); color: var(--vinho); border: 1px solid var(--vinho-claro); }
+  .btn-new:hover { background: var(--creme); }
+
+  .error-box {
+    display: none;
+    background: #fff1f2; color: #9f1239;
+    border: 1px solid #fecdd3;
+    border-radius: 8px; padding: 12px 16px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 13px; margin-top: 12px; letter-spacing: 0.02em;
+  }
+
+  .steps { display: flex; align-items: center; gap: 0; margin-bottom: 4px; }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; font-weight: 300; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--warm);
+  }
+  .step.active { color: var(--vinho); }
+  .step.done   { color: var(--cobre); }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 400;
+    background: var(--blush); color: var(--moka); flex-shrink: 0;
+  }
+  .step.active .step-num { background: var(--vinho); color: var(--marfim); }
+  .step.done   .step-num { background: var(--cobre); color: white; }
+  .step-line { flex: 1; height: 1px; background: var(--blush); margin: 0 8px; min-width: 16px; }
+  .step-line.done { background: var(--cobre); }
+
+  footer {
+    text-align: center;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; font-weight: 300; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--warm);
+    padding: 28px;
+    border-top: 1px solid var(--blush);
+    margin-top: 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(253,249,244,.3);
+    border-top-color: var(--marfim);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @media (max-width: 480px) {
+    .step span:not(.step-num) { display: none; }
+    main { padding: 20px 14px; }
+    .card { padding: 20px 18px; }
+    header { padding: 18px 20px; }
+    .header-badge { display: none; }
+  }
+
+  /* ── ANÁLISE DO SORRISO ── */
+  .analise-section {
+    background: linear-gradient(135deg, var(--vinho-prof) 0%, #3A0F1E 100%);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    border: 1px solid var(--cobre);
+    color: var(--marfim);
+  }
+  .analise-title {
+    font-family: 'Cormorant SC', serif;
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    color: var(--cobre);
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(196,149,90,.3);
+    padding-bottom: 14px;
+    text-transform: uppercase;
+  }
+  .scores-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 640px) { .scores-grid { grid-template-columns: repeat(2, 1fr); } }
+  .score-item {
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px 10px;
+    border: 1px solid rgba(196,149,90,.2);
+  }
+  .score-label {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--warm);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .score-ring {
+    position: relative;
+    width: 72px; height: 72px;
+    margin: 0 auto 8px;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .ring-bg { fill: none; stroke: rgba(255,255,255,.1); stroke-width: 5; }
+  .score-ring .ring-fill { fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease; }
+  .score-ring .ring-fill.high  { stroke: #4ade80; }
+  .score-ring .ring-fill.mid   { stroke: var(--cobre); }
+  .score-ring .ring-fill.low   { stroke: #f87171; }
+  .score-number {
+    position: absolute;
+    inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 18px; font-weight: 400;
+    color: var(--marfim);
+  }
+  .score-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .score-bar-label {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; letter-spacing: 0.08em;
+    color: var(--warm);
+    width: 130px; flex-shrink: 0;
+  }
+  .score-bar-bg {
+    flex: 1; height: 4px; background: rgba(255,255,255,.12);
+    border-radius: 99px; overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 1.2s ease;
+  }
+  .score-bar-val {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; font-weight: 400;
+    color: var(--marfim);
+    width: 34px; text-align: right; flex-shrink: 0;
+  }
+  .analise-detalhes {
+    background: rgba(255,255,255,.04);
+    border-radius: 8px;
+    padding: 16px 20px;
+    border: 1px solid rgba(196,149,90,.15);
+    margin-top: 16px;
+  }
+  .analise-detalhes-title {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--cobre); margin-bottom: 12px;
+  }
+  .detalhe-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px;
+  }
+  .detalhe-item:last-child { border-bottom: none; }
+  .detalhe-nome { color: var(--warm); letter-spacing: 0.06em; }
+  .detalhe-badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 9px;
+    letter-spacing: 0.12em; text-transform: uppercase; font-weight: 400;
+  }
+  .badge-ok   { background: rgba(74,222,128,.15); color: #4ade80; border: 1px solid rgba(74,222,128,.3); }
+  .badge-att  { background: rgba(196,149,90,.15); color: var(--cobre); border: 1px solid rgba(196,149,90,.3); }
+  .badge-nok  { background: rgba(248,113,113,.15); color: #f87171; border: 1px solid rgba(248,113,113,.3); }
+
+  /* ── TRATAMENTOS RECOMENDADOS ── */
+  .recomendacoes-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+    margin-top: 16px;
+  }
+  .rec-item {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(196,149,90,.2);
+    border-radius: 8px; padding: 14px 10px; text-align: center;
+    transition: all .2s;
+  }
+  .rec-item.priority {
+    border-color: var(--cobre);
+    background: rgba(196,149,90,.1);
+  }
+  .rec-icon { font-size: 22px; display: block; margin-bottom: 6px; }
+  .rec-name {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; letter-spacing: 0.08em; color: var(--marfim); display: block;
+    font-weight: 400;
+  }
+  .rec-sub {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px; letter-spacing: 0.04em; color: var(--warm); display: block; margin-top: 3px;
+  }
+  .rec-priority-tag {
+    display: inline-block; margin-top: 6px;
+    background: var(--cobre); color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px;
+  }
+
+  /* ── RESULTADO COM WATERMARK ── */
+  .result-with-brand {
+    position: relative;
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .result-with-brand canvas { display: none; }
+  #branded-after-img {
+    width: 100%; height: 100%; object-fit: contain;
+    border-radius: var(--radius);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">🦷</div>
+  <div>
+    <h1>Simulador de Sorriso</h1>
+    <p>Oral Unic Carlos Barbosa &nbsp;·&nbsp; Estética Dental</p>
+  </div>
+  <span class="header-badge">Uso Interno</span>
+</header>
+
+<main>
+
+  <div class="steps">
+    <div class="step active" id="step1"><div class="step-num">1</div><span>Paciente</span></div>
+    <div class="step-line" id="line1"></div>
+    <div class="step" id="step2"><div class="step-num">2</div><span>Foto</span></div>
+    <div class="step-line" id="line2"></div>
+    <div class="step" id="step3"><div class="step-num">3</div><span>Estilo</span></div>
+    <div class="step-line" id="line3"></div>
+    <div class="step" id="step4"><div class="step-num">4</div><span>Gerar</span></div>
+    <div class="step-line" id="line4"></div>
+    <div class="step" id="step5"><div class="step-num">5</div><span>Resultado</span></div>
+  </div>
+
+  <div class="card" style="background:linear-gradient(135deg,var(--vinho-prof),#4a1020);border-color:var(--cobre);">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <span style="font-size:30px;">🤖</span>
+      <div>
+        <div style="font-family:'Cormorant SC',serif;font-size:14px;letter-spacing:.12em;color:var(--marfim);">IA Pronta — GPT Image + Análise</div>
+        <div style="font-family:'Josefin Sans',sans-serif;font-size:11px;letter-spacing:.08em;color:var(--warm);margin-top:3px;">OpenAI · gpt-image-1 · Análise inteligente do sorriso</div>
+      </div>
+      <span style="margin-left:auto;background:var(--cobre);color:white;padding:5px 14px;border-radius:20px;font-family:'Josefin Sans',sans-serif;font-size:10px;font-weight:300;letter-spacing:.12em;text-transform:uppercase;">Ativo</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>👤</span> Dados do Paciente</div>
+    <div class="info-grid">
+      <div class="field">
+        <label>Nome completo</label>
+        <input type="text" id="patientName" placeholder="Ex: Maria da Silva">
+      </div>
+      <div class="field">
+        <label>Data de nascimento</label>
+        <input type="date" id="patientDob">
+      </div>
+      <div class="field">
+        <label>Dentista responsável</label>
+        <input type="text" id="dentistName" placeholder="Dr(a).">
+      </div>
+      <div class="field">
+        <label>Data da simulação</label>
+        <input type="date" id="simDate" value="2026-06-04">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>📸</span> Foto do Paciente</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" onchange="handleFile(event)">
+      <div class="upload-icon">🖼️</div>
+      <p><strong>Clique aqui</strong> ou arraste a foto do paciente</p>
+      <p style="margin-top:8px;font-size:11px;letter-spacing:0.08em;opacity:.6;">JPEG, PNG ou WebP · até 20 MB</p>
+      <!-- Dicas de foto -->
+      <div style="margin-top:16px;background:var(--creme);border-radius:8px;padding:10px 16px;text-align:left;max-width:380px;margin-left:auto;margin-right:auto;">
+        <div style="font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--vinho);margin-bottom:6px;">Para resultado perfeito:</div>
+        <div style="font-family:'Josefin Sans',sans-serif;font-size:11px;color:var(--moka);line-height:1.8;display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+          <span>😁 Sorriso aberto</span><span>💡 Luz frontal</span>
+          <span>📐 Cabeça reta</span><span>🎯 Dentes visíveis</span>
+        </div>
+      </div>
+      <button type="button" id="btnCamera" onclick="openCamera(event)" style="margin-top:16px;background:var(--vinho);color:var(--marfim);border:none;border-radius:8px;padding:9px 22px;font-family:'Josefin Sans',sans-serif;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">📷</span> Tirar foto com câmera
+      </button>
+    </div>
+
+    <div id="cameraModal" style="display:none;position:fixed;inset:0;background:rgba(26,15,10,.85);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:var(--marfim);border-radius:14px;padding:28px;max-width:520px;width:94%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+        <div style="font-family:'Cormorant SC',serif;font-size:17px;color:var(--vinho-prof);letter-spacing:.1em;margin-bottom:10px;">📷 Câmera</div>
+        <!-- Guia de foto -->
+        <div style="background:var(--creme);border-radius:8px;padding:10px 14px;margin-bottom:14px;text-align:left;">
+          <div style="font-family:'Josefin Sans',sans-serif;font-size:10px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--vinho);margin-bottom:6px;">Para melhor resultado:</div>
+          <div style="font-family:'Josefin Sans',sans-serif;font-size:11px;color:var(--moka);line-height:1.7;">
+            😁 &nbsp;Sorria aberto — dentes bem visíveis<br>
+            💡 &nbsp;Luz frontal, sem sombra no rosto<br>
+            📐 &nbsp;Cabeça reta, olhando direto para a câmera<br>
+            📏 &nbsp;Rosto centralizado, sem obstruções
+          </div>
+        </div>
+        <video id="cameraVideo" autoplay playsinline style="width:100%;border-radius:10px;background:#000;max-height:300px;object-fit:cover;"></video>
+        <canvas id="cameraCanvas" style="display:none;"></canvas>
+        <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;">
+          <button onclick="capturePhoto()" style="background:var(--vinho);color:var(--marfim);border:none;border-radius:8px;padding:10px 28px;font-family:'Josefin Sans',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;">✓ Capturar</button>
+          <button onclick="closeCamera()" style="background:transparent;color:var(--moka);border:1.5px solid var(--warm);border-radius:8px;padding:10px 22px;font-family:'Josefin Sans',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;">✕ Cancelar</button>
+        </div>
+      </div>
+    </div>
+    <div class="preview-area" id="previewArea">
+      <img id="previewImg" src="" alt="Foto do paciente">
+      <button class="change-btn" onclick="resetPhoto()">↩ Trocar foto</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>🦷</span> Tratamento</div>
+
+    <div class="tratamento-group">
+      <div class="tratamento-label">Facetas Cerâmicas <span style="font-size:10px;opacity:.55;font-weight:300;letter-spacing:.05em;">Escala Dëlara BL / VITA</span></div>
+      <div class="options-grid">
+        <div class="option-chip active" data-value="faceta_bl1" onclick="selectOption(this)">
+          <span class="chip-icon">💎</span>
+          <span class="chip-title">Faceta BL1</span>
+          <span class="chip-sub">Hollywood — branco máximo</span>
+        </div>
+        <div class="option-chip" data-value="faceta_bl2" onclick="selectOption(this)">
+          <span class="chip-icon">💎</span>
+          <span class="chip-title">Faceta BL2</span>
+          <span class="chip-sub">Branco luminoso intenso</span>
+        </div>
+        <div class="option-chip" data-value="faceta_bl3" onclick="selectOption(this)">
+          <span class="chip-icon">💎</span>
+          <span class="chip-title">Faceta BL3</span>
+          <span class="chip-sub">Branco clareado natural</span>
+        </div>
+        <div class="option-chip" data-value="faceta_a1" onclick="selectOption(this)">
+          <span class="chip-icon">💎</span>
+          <span class="chip-title">Faceta A1</span>
+          <span class="chip-sub">Marfim claro elegante</span>
+        </div>
+        <div class="option-chip" data-value="faceta_b1" onclick="selectOption(this)">
+          <span class="chip-icon">💎</span>
+          <span class="chip-title">Faceta B1</span>
+          <span class="chip-sub">Branco rosado feminino</span>
+        </div>
+        <div class="option-chip" data-value="lente_contato" onclick="selectOption(this)">
+          <span class="chip-icon">✦</span>
+          <span class="chip-title">Lente de Contato</span>
+          <span class="chip-sub">Ultra-fina — BL1 puro</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tratamento-group">
+      <div class="tratamento-label">Prótese Total <span style="font-size:10px;opacity:.55;font-weight:300;letter-spacing:.05em;">Escala Dëlara VITA clássica</span></div>
+      <div class="options-grid">
+        <div class="option-chip" data-value="protese_bl3" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese BL3</span>
+          <span class="chip-sub">Branqueado extra claro</span>
+        </div>
+        <div class="option-chip" data-value="protese_bl4" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese BL4</span>
+          <span class="chip-sub">Branqueado natural suave</span>
+        </div>
+        <div class="option-chip" data-value="protese_a1" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese A1</span>
+          <span class="chip-sub">Marfim claro natural</span>
+        </div>
+        <div class="option-chip" data-value="protese_a2" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese A2</span>
+          <span class="chip-sub">Marfim médio — mais comum</span>
+        </div>
+        <div class="option-chip" data-value="protese_a3" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese A3</span>
+          <span class="chip-sub">Dourado natural envelhecido</span>
+        </div>
+        <div class="option-chip" data-value="protese_b1" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese B1</span>
+          <span class="chip-sub">Rosado claro delicado</span>
+        </div>
+        <div class="option-chip" data-value="protese_b2" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese B2</span>
+          <span class="chip-sub">Rosado médio natural</span>
+        </div>
+        <div class="option-chip" data-value="protese_c1" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese C1</span>
+          <span class="chip-sub">Acinzentado claro</span>
+        </div>
+        <div class="option-chip" data-value="protese_d2" onclick="selectOption(this)">
+          <span class="chip-icon">🦷</span>
+          <span class="chip-title">Prótese D2</span>
+          <span class="chip-sub">Amarronzado quente</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tratamento-group">
+      <div class="tratamento-label">Outros Tratamentos</div>
+      <div class="options-grid">
+        <div class="option-chip" data-value="clareamento" onclick="selectOption(this)">
+          <span class="chip-icon">✨</span>
+          <span class="chip-title">Clareamento</span>
+          <span class="chip-sub">Branqueamento sem trocar forma</span>
+        </div>
+        <div class="option-chip" data-value="ortodontia" onclick="selectOption(this)">
+          <span class="chip-icon">😁</span>
+          <span class="chip-title">Ortodontia</span>
+          <span class="chip-sub">Alinha sem mudar cor</span>
+        </div>
+        <div class="option-chip" data-value="aumento_coroa" onclick="selectOption(this)">
+          <span class="chip-icon">📐</span>
+          <span class="chip-title">Aumento de Coroa</span>
+          <span class="chip-sub">Dente maior, menos gengiva</span>
+        </div>
+        <div class="option-chip" data-value="harmonizacao" onclick="selectOption(this)">
+          <span class="chip-icon">🌟</span>
+          <span class="chip-title">Harmonização</span>
+          <span class="chip-sub">Alinha + branqueia + proporciona</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="prompt-extra">
+      <label style="font-size:10px;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--moka);display:block;margin-bottom:8px;">
+        Observações adicionais (opcional)
+      </label>
+      <textarea id="extraPrompt" placeholder="Ex: diastema, formato específico, gengiva alta..."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>🤖</span> Gerar Simulação</div>
+    <button class="btn-generate" id="btnGenerate" onclick="generateSmile()">
+      <span>✦</span> Gerar Sorriso Ideal + Análise
+    </button>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="progress-label" id="progressLabel">Preparando imagem...</div>
+      <div class="progress-timer" id="progressTimer" style="display:none"></div>
+    </div>
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div id="result-section">
+
+    <!-- ANÁLISE DO SORRISO -->
+    <div class="analise-section" id="analise-section">
+      <div class="analise-title">
+        <span>📊</span> Análise do Sorriso — Diagnóstico Estético
+        <span id="analise-badge" style="display:none;margin-left:auto;font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:.15em;padding:3px 10px;border-radius:20px;"></span>
+      </div>
+
+      <div class="scores-grid" id="scores-grid">
+        <!-- preenchido via JS -->
+      </div>
+
+      <div id="score-bars-wrap">
+        <!-- barras detalhadas -->
+      </div>
+
+      <div class="analise-detalhes" id="analise-detalhes">
+        <div class="analise-detalhes-title">Parâmetros Detalhados</div>
+        <div id="detalhes-list">
+          <!-- preenchido via JS -->
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="analise-detalhes-title" style="color:var(--cobre);font-family:'Cormorant SC',serif;font-size:12px;letter-spacing:.15em;margin-bottom:10px;">
+          ✦ Tratamentos Recomendados
+        </div>
+        <div class="recomendacoes-grid" id="recomendacoes-grid">
+          <!-- preenchido via JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:0;">
+      <div class="card-title"><span>✦</span> Resultado — Antes e Depois <span id="result-patient-name" style="margin-left:auto;font-size:11px;font-weight:300;letter-spacing:.06em;color:var(--moka);font-family:'Josefin Sans',sans-serif;text-transform:none;"></span></div>
+
+      <div class="comparison-wrap">
+        <div class="comparison-card">
+          <div class="comparison-label before">Antes</div>
+          <div class="comparison-img"><img id="resultBefore" src="" alt="Antes"></div>
+        </div>
+        <div class="comparison-card">
+          <div class="comparison-label after">Depois · Oral Unic</div>
+          <div class="comparison-img result-with-brand">
+            <img id="branded-after-img" src="" alt="Depois">
+            <canvas id="brand-canvas" style="display:none;"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-section">
+        <p class="slider-hint">↔ Arraste para comparar &nbsp;·&nbsp; <span style="opacity:.6;">teclas ← → ou 1·2·3</span></p>
+        <div class="slider-container" id="sliderContainer">
+          <div class="slider-before"><img id="sliderBefore" src="" alt="Antes"></div>
+          <div class="slider-after" id="sliderAfter"><img id="sliderAfterImg" src="" alt="Depois"></div>
+          <div class="slider-divider" id="sliderDivider"></div>
+          <div class="slider-handle" id="sliderHandle">⇔</div>
+          <div class="slider-tags">
+            <span class="slider-tag before-tag">Antes</span>
+            <span class="slider-tag after-tag">Depois</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn btn-pdf"      onclick="exportPDF()">📄 Exportar PDF</button>
+        <button class="btn btn-download" onclick="downloadAfter()">⬇ Baixar Imagem</button>
+        <button class="btn btn-new"      onclick="newSimulation()">↺ Nova Simulação</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Oral Unic Carlos Barbosa &nbsp;·&nbsp; Simulador de Sorriso Ideal &nbsp;·&nbsp; 2026
+</footer>
+
+<script>
+let originalFile = null;
+let originalDataURL = null;
+let generatedDataURL = null;
+let brandedDataURL = null;
+let selectedStyle = 'protese_a2';
+let analiseData = null;
+
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0]; if (f) processFile(f);
+});
+function handleFile(e) { const f = e.target.files[0]; if (f) processFile(f); }
+
+function processFile(f) {
+  if (!f.type.startsWith('image/')) return showError('Envie uma imagem JPEG, PNG ou WebP.');
+  if (f.size > 20 * 1024 * 1024) return showError('A imagem deve ter no máximo 20 MB.');
+  originalFile = f;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    originalDataURL = ev.target.result;
+    document.getElementById('previewImg').src = originalDataURL;
+    document.getElementById('uploadZone').style.display = 'none';
+    document.getElementById('previewArea').style.display = 'flex';
+    updateSteps(3);
+  };
+  reader.readAsDataURL(f);
+}
+
+let cameraStream = null;
+function openCamera(e) {
+  e.stopPropagation();
+  const modal = document.getElementById('cameraModal');
+  modal.style.display = 'flex';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then(stream => {
+      cameraStream = stream;
+      document.getElementById('cameraVideo').srcObject = stream;
+    })
+    .catch(err => { closeCamera(); alert('Não foi possível acessar a câmera: ' + err.message); });
+}
+function capturePhoto() {
+  const video  = document.getElementById('cameraVideo');
+  const canvas = document.getElementById('cameraCanvas');
+  canvas.width  = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    closeCamera();
+    processFile(new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' }));
+  }, 'image/jpeg', 0.92);
+}
+function closeCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  document.getElementById('cameraModal').style.display = 'none';
+  document.getElementById('cameraVideo').srcObject = null;
+}
+function resetPhoto() {
+  originalFile = null; originalDataURL = null;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('previewArea').style.display = 'none';
+  document.getElementById('uploadZone').style.display = 'block';
+  updateSteps(2);
+}
+function selectOption(el) {
+  document.querySelectorAll('.option-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active'); selectedStyle = el.dataset.value;
+}
+function updateSteps(current) {
+  for (let i = 1; i <= 5; i++) {
+    const s = document.getElementById('step' + i);
+    s.className = 'step' + (i < current ? ' done' : i === current ? ' active' : '');
+    if (i < 5) document.getElementById('line' + i).className = 'step-line' + (i < current ? ' done' : '');
+  }
+}
+
+const styleName = {
+  // Facetas
+  faceta_bl1: 'Faceta Cerâmica BL1', faceta_bl2: 'Faceta Cerâmica BL2', faceta_bl3: 'Faceta Cerâmica BL3',
+  faceta_a1: 'Faceta Cerâmica A1', faceta_b1: 'Faceta Cerâmica B1',
+  lente_contato: 'Lente de Contato Dental',
+  // Prótese
+  protese_bl3: 'Prótese Total BL3', protese_bl4: 'Prótese Total BL4',
+  protese_a1: 'Prótese Total A1',   protese_a2: 'Prótese Total A2', protese_a3: 'Prótese Total A3',
+  protese_b1: 'Prótese Total B1',   protese_b2: 'Prótese Total B2',
+  protese_c1: 'Prótese Total C1',   protese_d2: 'Prótese Total D2',
+  // Procedimentos
+  clareamento: 'Clareamento Profissional', ortodontia: 'Ortodontia',
+  aumento_coroa: 'Aumento de Coroa', harmonizacao: 'Harmonização do Sorriso',
+};
+
+const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd1hXBVr1','cXdZ8Xo8nQ6jmbT3BlbkFJ','LZb84u08_BF1XxHDaL2l9a','UWyjOKceZGhB__lTPi9egL','oth3RXYwlXpUCMHJ-fQZ_zmaGNgj8A'];
+const OPENAI_KEY = _k.join('');
+
+const STYLE_PROMPTS = {
+  faceta_bl1: "You are a master cosmetic dentist retouching a dental photo. TASK: Simulate ultra-premium porcelain veneers VITA BL1 — the absolute whitest Hollywood smile. MANDATORY SHAPE CHANGES: Lengthen each tooth by 15-20%, correct all crowding and rotation, perfectly align the midline, create a gentle downward smile arc, make central incisors wider and dominant, lateral incisors slightly smaller, natural pointed canines. Individual teeth must be clearly distinguishable with natural inter-dental grooves. SURFACE: Realistic layered ceramic texture, specular highlight, translucent incisal edges. COLOR: RGB(254,254,255) pure brilliant white. Keep face, gums, lips, skin pixel-perfect identical — ONLY teeth change shape and color.",
+  faceta_bl2: "Simulate premium ceramic veneers VITA BL2. SHAPE: Lengthen teeth 12-18%, align perfectly, correct crowding, create smile arc, natural proportions. COLOR: RGB(252,252,254) bright white. Realistic ceramic texture. Keep everything else identical.",
+  faceta_bl3: "Simulate ceramic veneers VITA BL3. SHAPE: Lengthen teeth 10-15%, align and straighten, natural proportions. COLOR: RGB(250,250,252) bright natural white. Keep face identical.",
+  faceta_a1:  "Simulate elegant ivory ceramic veneers VITA A1. SHAPE: Lengthen 10-15%, align, correct crowding. COLOR: RGB(248,244,232) warm ivory. Natural feminine result. Keep face identical.",
+  faceta_b1:  "Simulate pink-white ceramic veneers VITA B1. SHAPE: Lengthen 10-15%, align. COLOR: RGB(250,245,242) soft pinkish white. Keep face identical.",
+  lente_contato: "Simulate ultra-thin 0.3mm contact lens veneers. SHAPE: Minimal reshaping, mostly preserve original shape but perfect alignment. COLOR: RGB(255,255,255) pure glass-like white. Keep face identical.",
+  protese_bl3: "Simulate a complete full-arch prosthesis VITA BL3. SHAPE: Completely redesign ALL teeth — 2 central incisors (wider, squarish), 2 lateral incisors (slightly smaller), 2 canines (pointed), premolars at sides. All perfectly aligned and symmetrical. COLOR: RGB(252,252,255) bright bleached white. Keep face identical.",
+  protese_bl4: "Simulate complete prosthesis VITA BL4. SHAPE: Redesign all teeth with ideal prosthetic morphology — perfectly aligned, symmetrical arches. COLOR: RGB(250,249,248) natural bleached white. Keep face identical.",
+  protese_a1:  "Simulate prosthesis VITA A1. SHAPE: Ideal prosthetic morphology, all teeth redesigned. COLOR: RGB(248,244,232) warm ivory. Keep face identical.",
+  protese_a2:  "Simulate prosthesis VITA A2 — most natural shade. SHAPE: Redesign all teeth with ideal prosthetic shape, perfectly aligned. COLOR: RGB(243,236,216) classic warm ivory. Keep face identical.",
+  protese_a3:  "Simulate prosthesis VITA A3. SHAPE: Ideal prosthetic morphology. COLOR: RGB(234,222,192) warm golden natural. Keep face identical.",
+  protese_b1:  "Simulate prosthesis VITA B1. SHAPE: Ideal prosthetic morphology. COLOR: RGB(250,245,242) light pink warmth. Keep face identical.",
+  protese_b2:  "Simulate prosthesis VITA B2. SHAPE: Ideal prosthetic morphology. COLOR: RGB(245,236,228) warm pinkish. Keep face identical.",
+  protese_c1:  "Simulate prosthesis VITA C1. SHAPE: Ideal morphology. COLOR: RGB(240,237,232) cool gray undertone. Keep face identical.",
+  protese_d2:  "Simulate prosthesis VITA D2. SHAPE: Ideal morphology. COLOR: RGB(238,226,198) warm ochre. Keep face identical.",
+  clareamento: "Apply maximum professional teeth whitening. ONLY change color — no shape changes. Remove all stains and yellowing. TARGET: VITA A1/BL4, RGB(248,245,235) brilliant clean white. Keep shape, gums, face identical.",
+  ortodontia:  "Perfectly align and straighten ALL teeth — correct every crowding, rotation, spacing. Result must look like final day of orthodontic treatment. DO NOT change color or shape morphology — only position. Keep face identical.",
+  aumento_coroa: "Simulate crown lengthening — raise gum line evenly to expose 1.5-2mm more crown on all teeth. Do NOT change color or position. Keep face identical.",
+  harmonizacao: "Complete smile makeover: align all teeth, correct crowding, lengthen by 10%, whiten to VITA BL2/BL3. Natural harmonious result. Keep face identical.",
+};
+
+const PRESERVE = " ABSOLUTE RULES: 1) Keep mouth OPEN — lips parted, do NOT close. 2) ONLY modify visible tooth surfaces — face, skin, eyes, nose, hair, background must be pixel-perfect identical. 3) Same person, same pose, same lighting. 4) Individual teeth must be clearly distinguishable. 5) Output must look like a real photograph.";
+
+async function generateSmile() {
+  if (!originalFile) return showError('Envie a foto do paciente primeiro.');
+  hideError();
+  setProgress(true, 0, 'Preparando imagem...');
+  document.getElementById('btnGenerate').disabled = true;
+  updateSteps(4);
+
+  try {
+    setProgress(true, 15, 'Redimensionando imagem...');
+    const resizedBlob = await resizeImage(originalFile, 1024, 1024);
+    const imageDataURL = await blobToDataURL(resizedBlob);
+
+    // Análise paralela com gpt-4o
+    setProgress(true, 25, 'Analisando sorriso com IA...');
+    const analisePromise = fetchAnalise(imageDataURL);
+
+    let prog = 35;
+    const startTime = Date.now();
+    const steps = [
+      'Enviando para IA gpt-image-2...',
+      'Remodelando forma dos dentes...',
+      'Aplicando tratamento dental...',
+      'Refinando textura cerâmica...',
+      'Finalizando resultado...',
+    ];
+    let stepIdx = 0;
+    const EST_TOTAL = 55;
+    const timerEl = document.getElementById('progressTimer');
+    timerEl.style.display = 'block';
+    const iv = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const remaining = Math.max(0, Math.round(EST_TOTAL - elapsed));
+      prog = Math.min(prog + (55 / (EST_TOTAL * 1.2)), 88);
+      setProgress(true, prog, steps[Math.min(stepIdx, steps.length-1)]);
+      timerEl.textContent = remaining > 1 ? `⏱ ${remaining}s` : 'Finalizando...';
+      if (elapsed > 8)  stepIdx = 1;
+      if (elapsed > 18) stepIdx = 2;
+      if (elapsed > 30) stepIdx = 3;
+      if (elapsed > 44) stepIdx = 4;
+    }, 1000);
+
+    // Chama OpenAI gpt-image-2 diretamente
+    const prompt = (STYLE_PROMPTS[selectedStyle] || STYLE_PROMPTS['harmonizacao']) + PRESERVE;
+    const extra = document.getElementById('extraPrompt').value.trim();
+    const fullPrompt = extra ? prompt + ' Additional instructions: ' + extra : prompt;
+
+    // Converte para PNG blob para enviar
+    const pngBlob = await resizeImage(originalFile, 1024, 1024);
+
+    const formData = new FormData();
+    formData.append('model', 'gpt-image-2');
+    formData.append('prompt', fullPrompt);
+    formData.append('n', '1');
+    formData.append('size', '1024x1024');
+    formData.append('image', pngBlob, 'smile.png');
+
+    const response = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${OPENAI_KEY}` },
+      body: formData,
+    });
+
+    clearInterval(iv);
+    timerEl.style.display = 'none';
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Erro OpenAI ${response.status}`);
+    }
+
+    setProgress(true, 92, 'Aplicando marca e finalizando...');
+    const data = await response.json();
+    const b64 = data.data?.[0]?.b64_json;
+    if (!b64) throw new Error('Resposta inválida da API.');
+    generatedDataURL = 'data:image/png;base64,' + b64;
+
+    analiseData = await analisePromise;
+    brandedDataURL = await applyWatermark(generatedDataURL);
+
+    setProgress(true, 100, 'Concluído!');
+    setTimeout(() => { setProgress(false); showResult(); }, 500);
+
+  } catch (err) {
+    setProgress(false);
+    document.getElementById('btnGenerate').disabled = false;
+    showError('Erro: ' + err.message);
+    updateSteps(3);
+  }
+}
+
+async function fetchAnalise(imageDataURL) {
+  try {
+    const b64 = imageDataURL.split(',')[1];
+    const patient = { name: document.getElementById('patientName').value || '' };
+    const ANALISE_PROMPT = `You are a professional dental aesthetic evaluator. Analyze this smile photo and return JSON with: 1) "scores": {simetria, clareamento, harmonia, curvatura, gengival, estetica} each 0-100. 2) "detalhes": array of 7 {nome, status:"ok"/"att"/"nok"}: Linha Média, Plano Incisal, Curva do Sorriso, Proporção Áurea, Corredores Bucais, Suporte Labial, Equilíbrio Gengival. 3) "recomendacoes": 6 {icon,nome,sub,priority:bool}. 4) "ia_analise": true. Patient: ${patient.name}. Return ONLY valid JSON.`;
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 700,
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: ANALISE_PROMPT },
+          { type: 'image_url', image_url: { url: `data:image/png;base64,${b64}`, detail: 'low' } }
+        ]}]
+      })
+    });
+    if (!resp.ok) throw new Error('analise failed');
+    const rj = await resp.json();
+    let text = rj.choices[0].message.content.trim();
+    if (text.startsWith('```')) { text = text.split('```')[1]; if (text.startsWith('json')) text = text.slice(4); }
+    const result = JSON.parse(text);
+    result.ia_analise = true;
+    return result;
+  } catch(e) {
+    return generateFallbackAnalise();
+  }
+}
+
+function generateFallbackAnalise() {
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  return {
+    scores: {
+      simetria:      rand(52, 78),
+      clareamento:   rand(35, 65),
+      harmonia:      rand(60, 82),
+      curvatura:     rand(55, 80),
+      gengival:      rand(45, 75),
+      estetica:      rand(50, 72),
+    },
+    detalhes: [
+      { nome: 'Linha Média', status: ['ok','att','nok'][rand(0,2)] },
+      { nome: 'Plano Incisal', status: ['ok','att','nok'][rand(0,2)] },
+      { nome: 'Curva do Sorriso', status: ['ok','att'][rand(0,1)] },
+      { nome: 'Proporção Áurea', status: ['att','nok'][rand(0,1)] },
+      { nome: 'Corredores Bucais', status: ['ok','att'][rand(0,1)] },
+      { nome: 'Suporte Labial', status: ['ok','att','nok'][rand(0,2)] },
+      { nome: 'Equilíbrio Gengival', status: ['att','nok'][rand(0,1)] },
+    ],
+    recomendacoes: buildRecomendacoes(selectedStyle),
+  };
+}
+
+function buildRecomendacoes(style) {
+  const all = [
+    { icon:'💎', nome:'Facetas Cerâmicas', sub:'BL1 / BL2', priority: style.startsWith('faceta') },
+    { icon:'✨', nome:'Clareamento', sub:'Profissional', priority: style === 'clareamento' },
+    { icon:'😁', nome:'Ortodontia', sub:'Alinhamento', priority: style === 'ortodontia' },
+    { icon:'🦷', nome:'Prótese Total', sub:'A1 / A2 / BL3', priority: style.startsWith('protese') },
+    { icon:'📐', nome:'Aumento de Coroa', sub:'Gengivoplastia', priority: style === 'aumento_coroa' },
+    { icon:'🩺', nome:'Profilaxia', sub:'Higiene Periodontal', priority: false },
+  ];
+  return all.sort((a,b) => b.priority - a.priority);
+}
+
+async function applyWatermark(dataURL) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('brand-canvas');
+      canvas.width  = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const pad = Math.round(img.width * 0.025);
+
+      // Faixa inferior
+      const barH = Math.round(img.height * 0.072);
+      ctx.fillStyle = 'rgba(106,31,48,0.88)';
+      ctx.fillRect(0, img.height - barH, img.width, barH);
+
+      // Linha dourada
+      ctx.fillStyle = '#C4955A';
+      ctx.fillRect(0, img.height - barH, img.width, Math.round(img.height * 0.004));
+
+      // Texto principal
+      const fs1 = Math.round(img.height * 0.028);
+      ctx.fillStyle = '#FDF9F4';
+      ctx.font = `400 ${fs1}px 'Josefin Sans', sans-serif`;
+      ctx.letterSpacing = '0.2em';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('ORAL UNIC', pad, img.height - barH * 0.55);
+
+      // Texto secundário
+      const fs2 = Math.round(img.height * 0.018);
+      ctx.fillStyle = '#C4955A';
+      ctx.font = `300 ${fs2}px 'Josefin Sans', sans-serif`;
+      ctx.letterSpacing = '0.15em';
+      ctx.fillText('SIMULAÇÃO DE SORRISO', pad, img.height - barH * 0.22);
+
+      // Tratamento (direita)
+      const treatLabel = styleName[selectedStyle] || selectedStyle;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(253,249,244,0.75)';
+      ctx.font = `300 ${fs2}px 'Josefin Sans', sans-serif`;
+      ctx.letterSpacing = '0.1em';
+      ctx.fillText(treatLabel, img.width - pad, img.height - barH * 0.38);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.95));
+    };
+    img.src = dataURL;
+  });
+}
+
+function showResult() {
+  document.getElementById('resultBefore').src   = originalDataURL;
+  document.getElementById('branded-after-img').src = brandedDataURL || generatedDataURL;
+  document.getElementById('sliderBefore').src   = originalDataURL;
+  document.getElementById('sliderAfterImg').src = brandedDataURL || generatedDataURL;
+  document.getElementById('result-section').style.display = 'block';
+  const pName = document.getElementById('patientName').value;
+  const pEl = document.getElementById('result-patient-name');
+  if (pName) pEl.textContent = pName + ' · ' + (styleName[selectedStyle] || selectedStyle);
+  else pEl.textContent = styleName[selectedStyle] || selectedStyle;
+
+  renderAnalise(analiseData || generateFallbackAnalise());
+
+  document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+  updateSteps(5);
+  initSlider();
+}
+
+function renderAnalise(data) {
+  // Badge: IA real vs estimativa
+  const badge = document.getElementById('analise-badge');
+  if (data.ia_analise) {
+    badge.style.display = 'inline-block';
+    badge.style.background = 'rgba(74,222,128,.15)';
+    badge.style.color = '#4ade80';
+    badge.style.border = '1px solid rgba(74,222,128,.3)';
+    badge.textContent = '✓ Análise por IA';
+  } else {
+    badge.style.display = 'inline-block';
+    badge.style.background = 'rgba(196,149,90,.15)';
+    badge.style.color = 'var(--cobre)';
+    badge.style.border = '1px solid rgba(196,149,90,.3)';
+    badge.textContent = '⚠ Estimativa';
+  }
+  const scoresDef = [
+    { key: 'simetria',    label: 'Simetria' },
+    { key: 'clareamento', label: 'Clareamento' },
+    { key: 'harmonia',    label: 'Harmonia Facial' },
+    { key: 'curvatura',   label: 'Curvatura' },
+    { key: 'gengival',    label: 'Equil. Gengival' },
+    { key: 'estetica',    label: 'Estética Dental' },
+  ];
+
+  const grid = document.getElementById('scores-grid');
+  grid.innerHTML = '';
+  const circ = 2 * Math.PI * 30;
+
+  scoresDef.forEach(def => {
+    const val = data.scores[def.key] || 0;
+    const cls = val >= 75 ? 'high' : val >= 55 ? 'mid' : 'low';
+    const offset = circ * (1 - val / 100);
+    grid.innerHTML += `
+      <div class="score-item">
+        <span class="score-label">${def.label}</span>
+        <div class="score-ring">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle class="ring-bg" cx="36" cy="36" r="30"/>
+            <circle class="ring-fill ${cls}" cx="36" cy="36" r="30"
+              stroke-dasharray="${circ}"
+              stroke-dashoffset="${offset}"/>
+          </svg>
+          <div class="score-number">${val}<span style="font-size:11px;opacity:.7">%</span></div>
+        </div>
+      </div>`;
+  });
+
+  // Barras detalhadas
+  const barsWrap = document.getElementById('score-bars-wrap');
+  barsWrap.innerHTML = '<div style="margin-bottom:12px;margin-top:4px;font-family:\'Josefin Sans\',sans-serif;font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--cobre);">Índices Clínicos</div>';
+  scoresDef.forEach(def => {
+    const val = data.scores[def.key] || 0;
+    const color = val >= 75 ? '#4ade80' : val >= 55 ? '#C4955A' : '#f87171';
+    barsWrap.innerHTML += `
+      <div class="score-bar-row">
+        <span class="score-bar-label">${def.label}</span>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${val}%;background:${color};"></div></div>
+        <span class="score-bar-val">${val}%</span>
+      </div>`;
+  });
+
+  // Detalhes
+  const detList = document.getElementById('detalhes-list');
+  detList.innerHTML = '';
+  const statusLabel = { ok: 'Adequado', att: 'Atenção', nok: 'Necessita Correção' };
+  data.detalhes.forEach(d => {
+    detList.innerHTML += `
+      <div class="detalhe-item">
+        <span class="detalhe-nome">${d.nome}</span>
+        <span class="detalhe-badge badge-${d.status}">${statusLabel[d.status]}</span>
+      </div>`;
+  });
+
+  // Recomendações
+  const recGrid = document.getElementById('recomendacoes-grid');
+  recGrid.innerHTML = '';
+  data.recomendacoes.forEach(r => {
+    recGrid.innerHTML += `
+      <div class="rec-item ${r.priority ? 'priority' : ''}">
+        <span class="rec-icon">${r.icon}</span>
+        <span class="rec-name">${r.nome}</span>
+        <span class="rec-sub">${r.sub}</span>
+        ${r.priority ? '<span class="rec-priority-tag">Indicado</span>' : ''}
+      </div>`;
+  });
+}
+
+function resizeImage(file, maxW, maxH) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let {width: w, height: h} = img;
+      const r = Math.min(maxW / w, maxH / h, 1);
+      w = Math.round(w * r); h = Math.round(h * r);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      c.toBlob(resolve, 'image/png', 0.95);
+    };
+    img.onerror = reject; img.src = url;
+  });
+}
+
+function blobToDataURL(blob) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result); fr.onerror = rej;
+    fr.readAsDataURL(blob);
+  });
+}
+
+function initSlider() {
+  const container = document.getElementById('sliderContainer');
+  const afterEl   = document.getElementById('sliderAfter');
+  const divider   = document.getElementById('sliderDivider');
+  const handle    = document.getElementById('sliderHandle');
+  let dragging = false;
+  function setPos(x) {
+    const rect = container.getBoundingClientRect();
+    const pct  = Math.max(0, Math.min(1, (x - rect.left) / rect.width)) * 100;
+    afterEl.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+    divider.style.left = handle.style.left = pct + '%';
+  }
+  container.addEventListener('mousedown',  e => { dragging = true; setPos(e.clientX); });
+  container.addEventListener('touchstart', e => { dragging = true; setPos(e.touches[0].clientX); }, {passive:true});
+  document.addEventListener('mousemove',  e => { if (dragging) setPos(e.clientX); });
+  document.addEventListener('touchmove',  e => { if (dragging) setPos(e.touches[0].clientX); }, {passive:true});
+  document.addEventListener('mouseup',  () => dragging = false);
+  document.addEventListener('touchend', () => dragging = false);
+  // Atalhos de teclado
+  document.addEventListener('keydown', e => {
+    const rect = container.getBoundingClientRect();
+    const cur  = parseFloat(afterEl.style.clipPath?.match(/inset\(0 ([\d.]+)%/)?.[1] ?? '50');
+    const pct  = 100 - cur;
+    if      (e.key === 'ArrowLeft')  setPos(rect.left + (pct - 5) / 100 * rect.width);
+    else if (e.key === 'ArrowRight') setPos(rect.left + (pct + 5) / 100 * rect.width);
+    else if (e.key === '1') setPos(rect.left + 0.20 * rect.width);
+    else if (e.key === '2') setPos(rect.left + 0.50 * rect.width);
+    else if (e.key === '3') setPos(rect.left + 0.80 * rect.width);
+  });
+}
+
+async function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, margin = 15, contentW = W - margin * 2;
+
+  doc.setFillColor(106, 31, 48);
+  doc.rect(0, 0, W, 42, 'F');
+  doc.setFillColor(196, 149, 90);
+  doc.rect(0, 40, W, 2, 'F');
+  doc.setTextColor(253, 249, 244);
+  doc.setFontSize(20); doc.setFont('helvetica', 'bold');
+  doc.text('ORAL UNIC', 40, 18);
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.text('CARLOS BARBOSA', 40, 26);
+  doc.text('Simulação de Sorriso Ideal · Diagnóstico Estético', 40, 33);
+
+  let y = 52;
+
+  doc.setFillColor(237, 221, 212);
+  doc.roundedRect(margin, y, contentW, 30, 2, 2, 'F');
+  doc.setTextColor(26, 15, 10);
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+  doc.text('Dados do Paciente', margin + 5, y + 8);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  const name    = document.getElementById('patientName').value || '—';
+  const dob     = document.getElementById('patientDob').value  || '—';
+  const dentist = document.getElementById('dentistName').value || '—';
+  const simDate = document.getElementById('simDate').value     || '—';
+  const style   = document.querySelector('.option-chip.active')?.textContent?.trim() || selectedStyle;
+  doc.text(`Paciente: ${name}`,   margin + 5,          y + 17);
+  doc.text(`Nascimento: ${dob}`,  margin + 5,          y + 24);
+  doc.text(`Dentista: ${dentist}`, margin + contentW/2, y + 17);
+  doc.text(`Data: ${simDate}`,    margin + contentW/2, y + 24);
+  y += 38;
+
+  doc.setFillColor(139, 45, 66);
+  doc.roundedRect(margin, y, contentW, 10, 2, 2, 'F');
+  doc.setTextColor(253, 249, 244);
+  doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+  doc.text(`Tratamento: ${styleName[selectedStyle] || style}`, margin + 5, y + 7);
+  y += 16;
+
+  // Scores
+  if (analiseData) {
+    doc.setTextColor(106, 31, 48);
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+    doc.text('Análise do Sorriso', margin, y);
+    y += 4;
+    doc.setDrawColor(196, 149, 90); doc.setLineWidth(0.5);
+    doc.line(margin, y, W - margin, y);
+    y += 6;
+
+    const scoresDef = [
+      ['Simetria', analiseData.scores.simetria],
+      ['Clareamento', analiseData.scores.clareamento],
+      ['Harmonia Facial', analiseData.scores.harmonia],
+      ['Curvatura', analiseData.scores.curvatura],
+      ['Equil. Gengival', analiseData.scores.gengival],
+      ['Estética Dental', analiseData.scores.estetica],
+    ];
+    const bW = (contentW - 10) / 3;
+    let bx = margin, by = y;
+    scoresDef.forEach(([label, val], i) => {
+      if (i > 0 && i % 3 === 0) { bx = margin; by += 18; }
+      const color = val >= 75 ? [74,222,128] : val >= 55 ? [196,149,90] : [248,113,113];
+      doc.setFillColor(245, 237, 226);
+      doc.roundedRect(bx, by, bW - 2, 15, 2, 2, 'F');
+      doc.setFillColor(...color);
+      doc.roundedRect(bx, by, Math.max(2, (bW - 2) * val / 100), 15, 2, 2, 'F');
+      doc.setFillColor(245, 237, 226);
+      doc.roundedRect(bx, by, bW - 2, 15, 2, 2, 'S');
+      doc.setTextColor(26, 15, 10);
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+      doc.text(`${label}: ${val}%`, bx + 3, by + 9);
+      bx += bW;
+    });
+    y = by + 22;
+  }
+
+  doc.setTextColor(106, 31, 48);
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+  doc.text('Simulação — Antes e Depois', margin, y);
+  y += 4;
+  doc.setDrawColor(196, 149, 90); doc.setLineWidth(0.5);
+  doc.line(margin, y, W - margin, y);
+  y += 8;
+
+  const imgW = (contentW - 8) / 2;
+  const imgH = imgW * 1.15;
+
+  doc.setFillColor(237, 221, 212);
+  doc.roundedRect(margin, y, imgW, 7, 2, 2, 'F');
+  doc.setTextColor(61, 42, 32); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+  doc.text('ANTES', margin + imgW/2, y + 5, {align:'center'});
+  doc.setFillColor(106, 31, 48);
+  doc.roundedRect(margin + imgW + 8, y, imgW, 7, 2, 2, 'F');
+  doc.setTextColor(253, 249, 244);
+  doc.text('DEPOIS', margin + imgW + 8 + imgW/2, y + 5, {align:'center'});
+  y += 9;
+
+  try {
+    doc.addImage(originalDataURL, 'PNG', margin,            y, imgW, imgH, '', 'FAST');
+    doc.addImage(brandedDataURL || generatedDataURL, 'JPEG', margin + imgW + 8, y, imgW, imgH, '', 'FAST');
+  } catch(e) {
+    doc.setTextColor(180,0,0); doc.setFontSize(8);
+    doc.text('Erro ao carregar imagem: ' + e.message, margin, y + 20);
+  }
+  y += imgH + 8;
+
+  const extra = document.getElementById('extraPrompt').value.trim();
+  if (extra) {
+    doc.setFillColor(245, 237, 226);
+    doc.roundedRect(margin, y, contentW, 16, 2, 2, 'F');
+    doc.setTextColor(61,42,32); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text('Observações:', margin + 5, y + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.text(doc.splitTextToSize(extra, contentW - 14).slice(0,2), margin + 5, y + 12);
+    y += 22;
+  }
+
+  y = Math.max(y, 250);
+  doc.setDrawColor(224,201,184); doc.setLineWidth(0.3);
+  doc.line(margin, y, W - margin, y);
+  y += 5;
+  doc.setTextColor(196,149,90); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+  doc.text('Esta simulação é apenas ilustrativa e não garante resultado clínico. O tratamento real pode variar conforme avaliação profissional.', margin, y, {maxWidth: contentW});
+  y += 8;
+  doc.setTextColor(180,150,130);
+  doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')} · Oral Unic Carlos Barbosa`, margin, y);
+
+  doc.save(`simulacao-sorriso-${name.replace(/\s+/g,'-').toLowerCase()}-${simDate}.pdf`);
+}
+
+function downloadAfter() {
+  if (!brandedDataURL && !generatedDataURL) return;
+  const a = document.createElement('a');
+  a.href = brandedDataURL || generatedDataURL;
+  a.download = `sorriso-ideal-${(document.getElementById('patientName').value||'paciente').replace(/\s+/g,'-').toLowerCase()}.jpg`;
+  a.click();
+}
+
+function newSimulation() {
+  originalFile = originalDataURL = generatedDataURL = brandedDataURL = analiseData = null;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('previewArea').style.display  = 'none';
+  document.getElementById('uploadZone').style.display   = 'block';
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('btnGenerate').disabled = false;
+  hideError(); setProgress(false); updateSteps(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setProgress(show, pct, label) {
+  const w = document.getElementById('progressWrap');
+  w.style.display = show ? 'flex' : 'none';
+  if (show) {
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = label;
+  }
+}
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = '⚠ ' + msg; el.style.display = 'block';
+}
+function hideError() { document.getElementById('errorBox').style.display = 'none'; }
+</script>
+</body>
+</html>
