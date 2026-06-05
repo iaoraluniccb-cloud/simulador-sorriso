@@ -972,7 +972,7 @@ const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd
 const OPENAI_KEY = _k.join('');
 
 function buildPrompt(treatment, color, extra) {
-  return `Dental color retouch only. Modify EXCLUSIVELY the tooth enamel color and surface texture. ${treatment} Target tooth color: ${color}. PRESERVE EXACTLY — tooth height, tooth length, tooth width, tooth shape, gum line position, number of teeth visible, lip shape, mouth opening, jaw, nose, cheeks, skin, eyes, hair, background, lighting, shadows. Do NOT lengthen, shorten, widen, or reshape any tooth. Do NOT move the gum line. Every tooth must keep its exact original size and shape. Only change the color and surface finish. Photorealistic result.${extra ? ' Additional: ' + extra : ''}`;
+  return `Whiten and retouch the teeth to ${color}. ${treatment} The teeth must look bright, clean and natural. Keep all other parts of the photo 100% unchanged — face geometry, skin, lips, gums, nose, eyes, hair and background must be identical to the original. Only the tooth color changes. Photorealistic.${extra ? ' ' + extra : ''}`;
 }
 
 const STYLE_PROMPTS = {
@@ -1026,8 +1026,15 @@ async function detectTeethBox(imageDataURL) {
       h: Math.round(f.fh * 1024),
     };
   } catch(e) {
-    console.warn('Teeth detection failed:', e);
-    return null;
+    console.warn('Teeth detection failed, using face estimate:', e);
+    // Fallback: estimativa pelo terço inferior da face dentro da área válida
+    const lb = _lastLetterbox || { ox:0, oy:0, dw:1024, dh:1024 };
+    return {
+      x: lb.ox + Math.round(lb.dw * 0.25),
+      y: lb.oy + Math.round(lb.dh * 0.60),
+      w: Math.round(lb.dw * 0.50),
+      h: Math.round(lb.dh * 0.14),
+    };
   }
 }
 
@@ -1088,7 +1095,14 @@ async function compositeTeeth(origDataURL, aiDataURL, box) {
   pctx.globalCompositeOperation = 'destination-in';
   pctx.drawImage(mask, 0, 0);
 
-  ctx.drawImage(patch, rx, ry);
+  // Boost de brilho/contraste no patch dos dentes para garantir branco visível
+  const boosted = document.createElement('canvas');
+  boosted.width = rw; boosted.height = rh;
+  const bctx = boosted.getContext('2d');
+  bctx.filter = 'brightness(1.22) contrast(1.08)';
+  bctx.drawImage(patch, 0, 0);
+
+  ctx.drawImage(boosted, rx, ry);
   return canvas.toDataURL('image/png');
 }
 
