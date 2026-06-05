@@ -972,7 +972,7 @@ const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd
 const OPENAI_KEY = _k.join('');
 
 function buildPrompt(treatment, color, extra) {
-  return `Dental retouch only. This is an inpainting task: modify EXCLUSIVELY the tooth enamel surface visible inside the open mouth. ${treatment} Target tooth color: ${color}. ABSOLUTE CONSTRAINTS — do not change under any circumstance: the exact position and shape of the lips, the mouth opening size and shape, the jaw position, the nose shape and position, the cheeks, the skin, the eyes, the hair, the background, the lighting, the shadows, or any facial structure. The face geometry must be pixel-perfect identical to the original photo. Only the tooth color and texture may change. Photorealistic dental result.${extra ? ' Additional: ' + extra : ''}`;
+  return `Dental color retouch only. Modify EXCLUSIVELY the tooth enamel color and surface texture. ${treatment} Target tooth color: ${color}. PRESERVE EXACTLY — tooth height, tooth length, tooth width, tooth shape, gum line position, number of teeth visible, lip shape, mouth opening, jaw, nose, cheeks, skin, eyes, hair, background, lighting, shadows. Do NOT lengthen, shorten, widen, or reshape any tooth. Do NOT move the gum line. Every tooth must keep its exact original size and shape. Only change the color and surface finish. Photorealistic result.${extra ? ' Additional: ' + extra : ''}`;
 }
 
 const STYLE_PROMPTS = {
