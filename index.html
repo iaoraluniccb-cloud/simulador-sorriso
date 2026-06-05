@@ -1047,22 +1047,23 @@ async function compositeTeeth(originalURL, aiURL, box) {
     return canvas.toDataURL('image/png');
   }
 
-  // --- Região dos dentes no espaço original ---
-  const pad = Math.round(W * 0.018);
-  const rx = Math.max(0, box.x - pad);
-  const ry = Math.max(0, box.y - pad);
-  const rw = Math.min(W - rx, box.w + pad * 2);
-  const rh = Math.min(H - ry, box.h + pad * 2);
-
-  // --- Região equivalente no espaço da IA ---
-  // A IA foi gerada a partir de uma imagem 1024x1024 (resizeImage força isso)
-  // então a proporção é sempre W:1024 e H:1024
-  const scaleX = AW / W;
-  const scaleY = AH / H;
-  const sx = rx * scaleX;
-  const sy = ry * scaleY;
-  const sw = rw * scaleX;
-  const sh = rh * scaleY;
+  // box está no espaço 1024x1024 (onde a IA operou)
+  // Precisamos mapear para o espaço original (W x H)
+  const scaleX = W / AW;  // original / IA
+  const scaleY = H / AH;
+  const pad = Math.round(AW * 0.018);
+  // Região com padding no espaço da IA
+  const bx = Math.max(0, box.x - pad);
+  const by = Math.max(0, box.y - pad);
+  const bw = Math.min(AW - bx, box.w + pad * 2);
+  const bh = Math.min(AH - by, box.h + pad * 2);
+  // Região equivalente no espaço original
+  const rx = Math.round(bx * scaleX);
+  const ry = Math.round(by * scaleY);
+  const rw = Math.round(bw * scaleX);
+  const rh = Math.round(bh * scaleY);
+  // Região da IA (source)
+  const sx = bx, sy = by, sw = bw, sh = bh;
 
   // --- Extrai só a região dos dentes da IA em canvas temporário ---
   const patch = document.createElement('canvas');
@@ -1141,8 +1142,8 @@ async function generateSmile() {
 
     setProgress(true, 38, 'Detectando região dos dentes...');
     const pngBlob = await resizeImage(originalFile, 1024, 1024);
-    const imageDataURL2 = await blobToDataURL(pngBlob);
-    const teethBox = await detectTeethBox(imageDataURL2);
+    const imageDataURL2 = await blobToDataURL(pngBlob);   // 1024x1024 letterboxed — usado para enviar à IA e detectar
+    const teethBox = await detectTeethBox(imageDataURL2); // coords no espaço 1024x1024
 
     const formData = new FormData();
     formData.append('model', 'gpt-image-2');
@@ -1171,9 +1172,9 @@ async function generateSmile() {
     if (!b64) throw new Error('Resposta inválida da API.');
     const aiResultURL = 'data:image/png;base64,' + b64;
 
-    // Composite: cola o rosto original por cima do resultado da IA
-    // Só a região dos dentes vem do resultado da IA — o resto é 100% original
-    generatedDataURL = await compositeTeeth(imageDataURL2, aiResultURL, teethBox);
+    // Composite: base = foto original (sem letterbox), patch = dentes da IA (1024x1024)
+    // teethBox está em coords 1024x1024 — o composite mapeia para o espaço original
+    generatedDataURL = await compositeTeeth(originalDataURL, aiResultURL, teethBox);
 
     analiseData = await analisePromise;
     brandedDataURL = await applyWatermark(generatedDataURL);
@@ -1509,18 +1510,53 @@ function createDentalMask(file) {
 }
 
 function resizeImage(file, maxW, maxH) {
+  // Gera exatamente maxW x maxH com letterbox preto para preservar proporção
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      let {width: w, height: h} = img;
-      const r = Math.min(maxW / w, maxH / h, 1);
-      w = Math.round(w * r); h = Math.round(h * r);
+      const {width: iw, height: ih} = img;
+      const r = Math.min(maxW / iw, maxH / ih);
+      const dw = Math.round(iw * r);
+      const dh = Math.round(ih * r);
+      const ox = Math.round((maxW - dw) / 2);
+      const oy = Math.round((maxH - dh) / 2);
       const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      c.width = maxW; c.height = maxH;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, maxW, maxH);
+      ctx.drawImage(img, ox, oy, dw, dh);
+      // Guarda offset para o composite poder reverter
+      c._letterbox = { ox, oy, dw, dh, iw, ih };
       c.toBlob(resolve, 'image/png', 0.95);
+    };
+    img.onerror = reject; img.src = url;
+  });
+}
+
+function resizeImageFull(file, size) {
+  // Versão que retorna canvas diretamente (com _letterbox)
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const {width: iw, height: ih} = img;
+      const r = Math.min(size / iw, size / ih);
+      const dw = Math.round(iw * r);
+      const dh = Math.round(ih * r);
+      const ox = Math.round((size - dw) / 2);
+      const oy = Math.round((size - dh) / 2);
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, ox, oy, dw, dh);
+      c._letterbox = { ox, oy, dw, dh, iw, ih, size };
+      resolve(c);
     };
     img.onerror = reject; img.src = url;
   });
