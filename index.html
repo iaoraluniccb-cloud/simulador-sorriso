@@ -998,24 +998,33 @@ const STYLE_PROMPTS = {
 };
 
 async function detectTeethBox(imageDataURL) {
-  // Detecta coordenadas dos dentes na imagem (que já está em 1024x1024)
+  // Detecta dentes via frações relativas (mais robusto que coordenadas absolutas)
   try {
     const b64 = imageDataURL.split(',')[1];
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o', max_tokens: 100,
+        model: 'gpt-4o', max_tokens: 80,
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'This image is 1024x1024 px. Locate the teeth visible inside the open mouth. Return ONLY valid JSON: {"x":number,"y":number,"w":number,"h":number} in pixels. x,y = top-left corner. No extra text.' },
+          { type: 'text', text: 'In this 1024x1024 image, locate the teeth inside the open mouth. Return ONLY raw JSON (no markdown): {"cx":float,"cy":float,"fw":float,"fh":float} where cx,cy=center as fraction of image (0 to 1), fw,fh=width/height as fraction. Be precise.' },
           { type: 'image_url', image_url: { url: `data:image/png;base64,${b64}`, detail: 'high' } }
         ]}]
       })
     });
     if (!resp.ok) throw new Error('detect failed');
     const rj = await resp.json();
-    let text = rj.choices[0].message.content.trim().replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim();
-    return JSON.parse(text);
+    const content = rj.choices?.[0]?.message?.content || '';
+    const m = content.match(/\{[^}]+\}/);
+    if (!m) throw new Error('no json in response');
+    const f = JSON.parse(m[0]);
+    // Converte frações para coords no espaço 1024x1024
+    return {
+      x: Math.round(f.cx * 1024 - f.fw * 1024 / 2),
+      y: Math.round(f.cy * 1024 - f.fh * 1024 / 2),
+      w: Math.round(f.fw * 1024),
+      h: Math.round(f.fh * 1024),
+    };
   } catch(e) {
     console.warn('Teeth detection failed:', e);
     return null;
