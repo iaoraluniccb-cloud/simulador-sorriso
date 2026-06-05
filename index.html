@@ -1023,61 +1023,58 @@ async function detectTeethBox(imageDataURL) {
 }
 
 async function compositeTeeth(origDataURL, aiDataURL, box) {
-  // origDataURL = foto original do paciente (qualquer resolução)
-  // aiDataURL   = resultado 1024x1024 da IA (com letterbox preto nas bordas)
-  // box         = {x,y,w,h} dos dentes no espaço 1024x1024
   const [origImg, aiImg] = await Promise.all([
     new Promise((r,e)=>{ const i=new Image(); i.onload=()=>r(i); i.onerror=e; i.src=origDataURL; }),
     new Promise((r,e)=>{ const i=new Image(); i.onload=()=>r(i); i.onerror=e; i.src=aiDataURL; }),
   ]);
-
   const OW = origImg.naturalWidth, OH = origImg.naturalHeight;
-  const lb = _lastLetterbox; // { ox, oy, dw, dh } no espaço 1024x1024
+  const lb = _lastLetterbox; // {ox,oy,dw,dh} = área válida da imagem dentro do 1024x1024
 
-  // Canvas final = dimensões da foto original
   const canvas = document.createElement('canvas');
   canvas.width = OW; canvas.height = OH;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(origImg, 0, 0); // base: foto 100% original
+  ctx.drawImage(origImg, 0, 0); // base = foto original 100%
 
   if (!box || !lb) return canvas.toDataURL('image/png');
 
-  // Área dos dentes no espaço 1024x1024 (com padding)
-  const pad = 14;
+  // box está no espaço 1024x1024 letterboxed
+  // lb.ox/oy = margem preta, lb.dw/dh = área válida
+  // Mapeamento: coord_original = (coord_lb - offset_lb) / tamanho_lb * tamanho_original
+  const pad = 16;
   const tx = Math.max(lb.ox, box.x - pad);
   const ty = Math.max(lb.oy, box.y - pad);
   const tw = Math.min(lb.ox + lb.dw - tx, box.w + pad * 2);
   const th = Math.min(lb.oy + lb.dh - ty, box.h + pad * 2);
 
-  // Converte para espaço da foto original
-  // lb.ox/oy = offset do letterbox, lb.dw/dh = área válida dentro de 1024x1024
+  // Coordenadas no espaço original
   const rx = Math.round((tx - lb.ox) / lb.dw * OW);
   const ry = Math.round((ty - lb.oy) / lb.dh * OH);
   const rw = Math.round(tw / lb.dw * OW);
   const rh = Math.round(th / lb.dh * OH);
 
-  // Extrai patch dos dentes da imagem da IA
+  // Extrai patch dos dentes da IA (região tx,ty,tw,th do resultado 1024x1024)
   const patch = document.createElement('canvas');
   patch.width = rw; patch.height = rh;
   const pctx = patch.getContext('2d');
   pctx.drawImage(aiImg, tx, ty, tw, th, 0, 0, rw, rh);
 
-  // Blend suave nas bordas (feather)
+  // Feather: fade nas bordas para blend natural com a pele
   const f = Math.round(Math.min(rw, rh) * 0.15);
   const mask = document.createElement('canvas');
   mask.width = rw; mask.height = rh;
   const mctx = mask.getContext('2d');
-  mctx.fillStyle = '#000';
-  mctx.fillRect(0, 0, rw, rh);
-  // Gradientes nas 4 bordas
-  [[0,0,f,0],[rw-f,0,rw,0],[0,0,0,f],[0,rh-f,0,rh]].forEach(([x0,y0,x1,y1],i) => {
-    const g2 = mctx.createLinearGradient(x0,y0,x1,y1);
-    g2.addColorStop(0,'rgba(0,0,0,0)'); g2.addColorStop(1,'rgba(0,0,0,1)');
-    mctx.fillStyle = g2;
-    if (i===0) mctx.fillRect(0,0,f,rh);
-    else if (i===1) mctx.fillRect(rw-f,0,f,rh);
-    else if (i===2) mctx.fillRect(0,0,rw,f);
-    else mctx.fillRect(0,rh-f,rw,f);
+  // Preenche tudo preto (opaco), depois sobrepõe gradientes nas bordas
+  mctx.fillStyle = '#fff'; mctx.fillRect(0,0,rw,rh);
+  const edges = [
+    [0,0,f,0, 0,0,f,rh],       // esquerda
+    [rw,0,rw-f,0, rw-f,0,f,rh], // direita
+    [0,0,0,f, 0,0,rw,f],         // topo
+    [0,rh,0,rh-f, 0,rh-f,rw,f], // base
+  ];
+  edges.forEach(([gx0,gy0,gx1,gy1,fx,fy,fw,fh]) => {
+    const g2 = mctx.createLinearGradient(gx0,gy0,gx1,gy1);
+    g2.addColorStop(0,'rgba(0,0,0,1)'); g2.addColorStop(1,'rgba(0,0,0,0)');
+    mctx.fillStyle = g2; mctx.fillRect(fx,fy,fw,fh);
   });
   pctx.globalCompositeOperation = 'destination-in';
   pctx.drawImage(mask, 0, 0);
