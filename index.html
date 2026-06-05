@@ -998,9 +998,13 @@ const STYLE_PROMPTS = {
 };
 
 async function buildTeethMask(imageDataURL) {
-  // Usa gpt-4o para detectar bounding box dos dentes na imagem 1024x1024
-  // Retorna máscara PNG: transparente onde a IA pode editar (dentes), preto opaco no resto
   try {
+    // Descobre dimensões reais da imagem processada
+    const img = await new Promise((res, rej) => {
+      const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = imageDataURL;
+    });
+    const W = img.naturalWidth, H = img.naturalHeight;
+
     const b64 = imageDataURL.split(',')[1];
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -1009,7 +1013,7 @@ async function buildTeethMask(imageDataURL) {
         model: 'gpt-4o',
         max_tokens: 120,
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'This image is 1024x1024 pixels. Locate the teeth region visible inside the open mouth. Return ONLY a JSON object with: {"x":number,"y":number,"w":number,"h":number} representing the bounding box of the teeth area in pixels. x,y = top-left corner. Be precise — include only the visible tooth surfaces, not the lips or gums outside the teeth.' },
+          { type: 'text', text: `This image is ${W}x${H} pixels. Locate the teeth region visible inside the open mouth. Return ONLY a JSON object: {"x":number,"y":number,"w":number,"h":number} in pixels. x,y = top-left corner. Include only visible tooth surfaces.` },
           { type: 'image_url', image_url: { url: `data:image/png;base64,${b64}`, detail: 'high' } }
         ]}]
       })
@@ -1020,25 +1024,21 @@ async function buildTeethMask(imageDataURL) {
     if (text.startsWith('```')) { text = text.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim(); }
     const box = JSON.parse(text);
 
-    // Cria máscara 1024x1024: preto opaco em tudo, transparente na região dos dentes
+    // Máscara com dimensões EXATAS da imagem
     const canvas = document.createElement('canvas');
-    canvas.width = 1024; canvas.height = 1024;
+    canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
-    // Fundo preto opaco (bloqueado para edição)
     ctx.fillStyle = 'rgba(0,0,0,1)';
-    ctx.fillRect(0, 0, 1024, 1024);
-    // Região dos dentes: transparente (editável)
-    // Expande levemente a box para não cortar bordas dos dentes
-    const pad = 12;
+    ctx.fillRect(0, 0, W, H);
+    const pad = Math.round(W * 0.012);
     const rx = Math.max(0, box.x - pad);
     const ry = Math.max(0, box.y - pad);
-    const rw = Math.min(1024 - rx, box.w + pad * 2);
-    const rh = Math.min(1024 - ry, box.h + pad * 2);
+    const rw = Math.min(W - rx, box.w + pad * 2);
+    const rh = Math.min(H - ry, box.h + pad * 2);
     ctx.clearRect(rx, ry, rw, rh);
 
     return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
   } catch(e) {
-    // Fallback: sem máscara (só imagem)
     console.warn('Mask detection failed, running without mask:', e);
     return null;
   }
