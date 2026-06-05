@@ -878,6 +878,7 @@
 <script>
 let originalFile = null;
 let originalDataURL = null;
+let resizedDataURL = null; // foto original redimensionada 1024x1024 — usada no slider "Antes"
 let generatedDataURL = null;
 let brandedDataURL = null;
 let selectedStyle = 'protese_a2';
@@ -1136,9 +1137,9 @@ async function generateSmile() {
 
   try {
     setProgress(true, 15, 'Redimensionando imagem...');
-    // Uma única conversão 1024x1024 com letterbox — usada para tudo
     const pngBlob = await resizeImage(originalFile, 1024, 1024);
     const imageDataURL = await blobToDataURL(pngBlob);
+    resizedDataURL = imageDataURL; // salva para usar no slider "Antes" — mesma proporção do resultado
 
     // Análise paralela com gpt-4o
     setProgress(true, 25, 'Analisando sorriso com IA...');
@@ -1331,9 +1332,11 @@ async function applyWatermark(dataURL) {
 }
 
 function showResult() {
+  // Cards lado a lado: usa foto original nativa
   document.getElementById('resultBefore').src   = originalDataURL;
   document.getElementById('branded-after-img').src = brandedDataURL || generatedDataURL;
-  document.getElementById('sliderBefore').src   = originalDataURL;
+  // Slider: usa versão 1024x1024 para Antes e Depois ficarem perfeitamente alinhados
+  document.getElementById('sliderBefore').src   = resizedDataURL || originalDataURL;
   document.getElementById('sliderAfterImg').src = brandedDataURL || generatedDataURL;
   document.getElementById('result-section').style.display = 'block';
   const pName = document.getElementById('patientName').value;
