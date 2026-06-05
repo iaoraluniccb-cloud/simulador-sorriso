@@ -1042,27 +1042,35 @@ async function compositeTeeth(originalURL, aiURL, box) {
   ctx.drawImage(origImg, 0, 0, W, H);
 
   if (!box) {
-    // Sem detecção: sobrepõe IA inteira (fallback)
-    ctx.drawImage(aiImg, 0, 0, W, H);
+    // Sem detecção: usa IA sem bordas pretas (recorta letterbox)
+    const lb = _lastLetterbox;
+    if (lb) {
+      ctx.drawImage(aiImg, lb.ox, lb.oy, lb.dw, lb.dh, 0, 0, W, H);
+    } else {
+      ctx.drawImage(aiImg, 0, 0, W, H);
+    }
     return canvas.toDataURL('image/png');
   }
 
-  // box está no espaço 1024x1024 (onde a IA operou)
-  // Precisamos mapear para o espaço original (W x H)
-  const scaleX = W / AW;  // original / IA
-  const scaleY = H / AH;
-  const pad = Math.round(AW * 0.018);
-  // Região com padding no espaço da IA
-  const bx = Math.max(0, box.x - pad);
-  const by = Math.max(0, box.y - pad);
-  const bw = Math.min(AW - bx, box.w + pad * 2);
-  const bh = Math.min(AH - by, box.h + pad * 2);
-  // Região equivalente no espaço original
-  const rx = Math.round(bx * scaleX);
-  const ry = Math.round(by * scaleY);
-  const rw = Math.round(bw * scaleX);
-  const rh = Math.round(bh * scaleY);
-  // Região da IA (source)
+  // box está no espaço 1024x1024 com letterbox
+  // _lastLetterbox: { ox, oy, dw, dh } = área válida dentro do 1024x1024
+  const lb = _lastLetterbox || { ox:0, oy:0, dw:AW, dh:AH, maxW:AW, maxH:AH };
+  // Converte box do espaço letterboxed para espaço da imagem real (sem bordas)
+  // coord_real = (coord_letterbox - offset) / escala_letterbox * tamanho_original
+  const lbScaleX = lb.dw / W;  // pixels letterboxed por pixel original
+  const lbScaleY = lb.dh / H;
+  const pad = Math.round(lb.dw * 0.018);
+  // Região no espaço letterboxed
+  const bx = Math.max(lb.ox, box.x - pad);
+  const by = Math.max(lb.oy, box.y - pad);
+  const bw = Math.min(lb.ox + lb.dw - bx, box.w + pad * 2);
+  const bh = Math.min(lb.oy + lb.dh - by, box.h + pad * 2);
+  // Região no espaço original (sem letterbox)
+  const rx = Math.round((bx - lb.ox) / lbScaleX);
+  const ry = Math.round((by - lb.oy) / lbScaleY);
+  const rw = Math.round(bw / lbScaleX);
+  const rh = Math.round(bh / lbScaleY);
+  // Source na IA (letterboxed)
   const sx = bx, sy = by, sw = bw, sh = bh;
 
   // --- Extrai região dos dentes da IA ---
@@ -1520,6 +1528,9 @@ function createDentalMask(file) {
   });
 }
 
+// Guarda os parâmetros do último letterbox para o composite usar
+let _lastLetterbox = null;
+
 function resizeImage(file, maxW, maxH) {
   // Gera exatamente maxW x maxH com letterbox preto para preservar proporção
   return new Promise((resolve, reject) => {
@@ -1533,14 +1544,13 @@ function resizeImage(file, maxW, maxH) {
       const dh = Math.round(ih * r);
       const ox = Math.round((maxW - dw) / 2);
       const oy = Math.round((maxH - dh) / 2);
+      _lastLetterbox = { ox, oy, dw, dh, maxW, maxH };
       const c = document.createElement('canvas');
       c.width = maxW; c.height = maxH;
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, maxW, maxH);
       ctx.drawImage(img, ox, oy, dw, dh);
-      // Guarda offset para o composite poder reverter
-      c._letterbox = { ox, oy, dw, dh, iw, ih };
       c.toBlob(resolve, 'image/png', 0.95);
     };
     img.onerror = reject; img.src = url;
