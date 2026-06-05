@@ -1065,30 +1065,42 @@ async function compositeTeeth(originalURL, aiURL, box) {
   // Região da IA (source)
   const sx = bx, sy = by, sw = bw, sh = bh;
 
-  // --- Extrai só a região dos dentes da IA em canvas temporário ---
+  // --- Extrai região dos dentes da IA ---
   const patch = document.createElement('canvas');
   patch.width = rw; patch.height = rh;
   const pctx = patch.getContext('2d');
   pctx.drawImage(aiImg, sx, sy, sw, sh, 0, 0, rw, rh);
 
-  // --- Cria máscara de alpha com gradiente radial para blend natural ---
-  // Centro do patch, fade nas bordas
+  // --- Máscara com gradiente em todos os 4 lados (feather uniforme) ---
   const alphaCanvas = document.createElement('canvas');
   alphaCanvas.width = rw; alphaCanvas.height = rh;
   const actx = alphaCanvas.getContext('2d');
-  const cx = rw / 2, cy = rh / 2;
-  const grad = actx.createRadialGradient(cx, cy, Math.min(cx,cy)*0.3, cx, cy, Math.max(cx,cy)*1.1);
-  grad.addColorStop(0,   'rgba(255,255,255,1)');
-  grad.addColorStop(0.7, 'rgba(255,255,255,1)');
-  grad.addColorStop(1,   'rgba(255,255,255,0)');
-  actx.fillStyle = grad;
-  actx.fillRect(0, 0, rw, rh);
+  const f = Math.round(Math.min(rw, rh) * 0.18); // feather 18% da menor dimensão
+  // Gradiente esquerda
+  let g = actx.createLinearGradient(0,0,f,0);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)');
+  actx.fillStyle=g; actx.fillRect(0,0,f,rh);
+  // Gradiente direita
+  g = actx.createLinearGradient(rw-f,0,rw,0);
+  g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  actx.fillStyle=g; actx.fillRect(rw-f,0,f,rh);
+  // Gradiente topo
+  g = actx.createLinearGradient(0,0,0,f);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)');
+  actx.fillStyle=g; actx.fillRect(0,0,rw,f);
+  // Gradiente base
+  g = actx.createLinearGradient(0,rh-f,0,rh);
+  g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  actx.fillStyle=g; actx.fillRect(0,rh-f,rw,f);
+  // Centro sólido
+  actx.fillStyle='rgba(0,0,0,1)';
+  actx.fillRect(f,f,rw-f*2,rh-f*2);
 
-  // Aplica alpha ao patch
+  // Aplica alpha ao patch via destination-in
   pctx.globalCompositeOperation = 'destination-in';
   pctx.drawImage(alphaCanvas, 0, 0);
 
-  // --- Cola o patch sobre a foto original ---
+  // --- Cola patch sobre a foto original ---
   ctx.drawImage(patch, rx, ry);
 
   return canvas.toDataURL('image/png');
@@ -1103,8 +1115,9 @@ async function generateSmile() {
 
   try {
     setProgress(true, 15, 'Redimensionando imagem...');
-    const resizedBlob = await resizeImage(originalFile, 1024, 1024);
-    const imageDataURL = await blobToDataURL(resizedBlob);
+    // Uma única conversão 1024x1024 com letterbox — usada para tudo
+    const pngBlob = await resizeImage(originalFile, 1024, 1024);
+    const imageDataURL = await blobToDataURL(pngBlob);
 
     // Análise paralela com gpt-4o
     setProgress(true, 25, 'Analisando sorriso com IA...');
@@ -1141,9 +1154,7 @@ async function generateSmile() {
     const fullPrompt = extra ? basePrompt + ' Additional detail: ' + extra : basePrompt;
 
     setProgress(true, 38, 'Detectando região dos dentes...');
-    const pngBlob = await resizeImage(originalFile, 1024, 1024);
-    const imageDataURL2 = await blobToDataURL(pngBlob);   // 1024x1024 letterboxed — usado para enviar à IA e detectar
-    const teethBox = await detectTeethBox(imageDataURL2); // coords no espaço 1024x1024
+    const teethBox = await detectTeethBox(imageDataURL); // coords no espaço 1024x1024
 
     const formData = new FormData();
     formData.append('model', 'gpt-image-2');
