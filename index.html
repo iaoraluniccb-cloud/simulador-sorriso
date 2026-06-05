@@ -971,29 +971,31 @@ const styleName = {
 const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd1hXBVr1','cXdZ8Xo8nQ6jmbT3BlbkFJ','LZb84u08_BF1XxHDaL2l9a','UWyjOKceZGhB__lTPi9egL','oth3RXYwlXpUCMHJ-fQZ_zmaGNgj8A'];
 const OPENAI_KEY = _k.join('');
 
-const STYLE_PROMPTS = {
-  faceta_bl1: "Dental photo retouching. Modify ONLY the visible tooth enamel surfaces inside the open mouth. DO NOT change anything outside the teeth area. TEETH CHANGES: Apply VITA BL1 porcelain veneers — color RGB(254,254,255) pure brilliant white, lengthen each tooth slightly, align midline, smooth inter-dental grooves, ceramic texture with specular highlights. Face, skin, lips, gums, eyes, background: completely unchanged, pixel-perfect.",
-  faceta_bl2: "Dental photo retouching. Modify ONLY the tooth enamel inside the mouth. Apply VITA BL2 ceramic veneers — color RGB(252,252,254) bright white, slight tooth lengthening, aligned. Everything outside teeth: unchanged.",
-  faceta_bl3: "Dental photo retouching. Modify ONLY the tooth enamel inside the mouth. Apply VITA BL3 veneers — color RGB(250,250,252) bright natural white, teeth aligned and lengthened slightly. Face and all other areas: unchanged.",
-  faceta_a1:  "Dental photo retouching. Modify ONLY the tooth enamel. Apply VITA A1 ceramic veneers — color RGB(248,244,232) warm ivory, teeth aligned. Face unchanged.",
-  faceta_b1:  "Dental photo retouching. Modify ONLY the tooth enamel. Apply VITA B1 veneers — color RGB(250,245,242) pinkish white, teeth aligned. Face unchanged.",
-  lente_contato: "Dental photo retouching. Modify ONLY the tooth enamel. Apply ultra-thin contact lens veneers — color RGB(255,255,255) pure white, preserve original tooth shape. Face unchanged.",
-  protese_bl3: "Dental photo retouching. Modify ONLY the visible teeth inside the mouth. Replace with full-arch prosthesis VITA BL3 — color RGB(252,252,255) bright white. Ideal prosthetic tooth shape: uniform, aligned, symmetrical. Face, lips, gums edge, skin: completely unchanged.",
-  protese_bl4: "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA BL4 — color RGB(250,249,248). Ideal shape, aligned. Face unchanged.",
-  protese_a1:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA A1 — color RGB(248,244,232) warm ivory, ideal shape. Face unchanged.",
-  protese_a2:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA A2 — color RGB(243,236,216) classic ivory, ideal aligned shape. Face unchanged.",
-  protese_a3:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA A3 — color RGB(234,222,192) warm golden. Face unchanged.",
-  protese_b1:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA B1 — color RGB(250,245,242). Face unchanged.",
-  protese_b2:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA B2 — color RGB(245,236,228). Face unchanged.",
-  protese_c1:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA C1 — color RGB(240,237,232). Face unchanged.",
-  protese_d2:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA D2 — color RGB(238,226,198). Face unchanged.",
-  clareamento: "Dental photo retouching. Modify ONLY the tooth color — do NOT change shape. Professional whitening to VITA A1/BL4, color RGB(248,245,235) brilliant white. Remove stains and yellowing. Face, shape of teeth, gums, lips: completely unchanged.",
-  ortodontia:  "Dental photo retouching. Modify ONLY the tooth positions — align and straighten all teeth, correct crowding and rotation. Do NOT change color or tooth shape. Face and all other areas: completely unchanged.",
-  aumento_coroa: "Dental photo retouching. Modify ONLY the gum line — raise it slightly on each tooth to expose more crown. Do NOT change tooth color or position. Face unchanged.",
-  harmonizacao: "Dental photo retouching. Modify ONLY the teeth — align, whiten to VITA BL2 RGB(251,251,253), lengthen slightly. Face, skin, lips: completely unchanged.",
-};
+function buildPrompt(treatment, color, extra) {
+  return `Photo of a person smiling. Retouch ONLY the teeth visible inside the mouth. ${treatment} Target tooth color: ${color}. The rest of the photo — face, skin, eyes, nose, lips, hair, background — must remain completely unchanged and identical to the original. Do not alter anything outside the teeth. Photorealistic result.${extra ? ' ' + extra : ''}`;
+}
 
-const PRESERVE = " STRICT RULES — violating any rule makes the result completely invalid and unusable: RULE 1 (most important): The entire face must be BYTE-FOR-BYTE IDENTICAL to the input — same skin texture, same wrinkles, same pores, same eyes, same eyebrows, same nose, same lips outline, same hair, same glasses if present, same background, same lighting on face. RULE 2: Edit ONLY the tooth enamel surfaces visible between the parted lips. RULE 3: Do NOT move, reshape, or retouch lips, gums border, chin, cheeks, or any facial feature. RULE 4: Keep the mouth open exactly as in the original. RULE 5: The output must be photorealistic — indistinguishable from a real photograph.";
+const STYLE_PROMPTS = {
+  faceta_bl1:    buildPrompt('Apply bright white porcelain veneers (VITA BL1). Align teeth, smooth shape, ceramic texture.', 'pure brilliant white RGB(254,254,255)', ''),
+  faceta_bl2:    buildPrompt('Apply bright white ceramic veneers (VITA BL2). Align and slightly lengthen teeth.', 'bright white RGB(252,252,254)', ''),
+  faceta_bl3:    buildPrompt('Apply natural bright white veneers (VITA BL3). Align teeth.', 'bright natural white RGB(250,250,252)', ''),
+  faceta_a1:     buildPrompt('Apply ivory ceramic veneers (VITA A1). Align teeth.', 'warm ivory RGB(248,244,232)', ''),
+  faceta_b1:     buildPrompt('Apply pinkish-white ceramic veneers (VITA B1). Align teeth.', 'soft pink-white RGB(250,245,242)', ''),
+  lente_contato: buildPrompt('Apply ultra-thin contact lens veneers. Keep original tooth shape.', 'pure white RGB(255,255,255)', ''),
+  protese_bl3:   buildPrompt('Replace all teeth with a full prosthesis (VITA BL3). Uniform, symmetrical, aligned teeth.', 'bright bleached white RGB(252,252,255)', ''),
+  protese_bl4:   buildPrompt('Replace all teeth with full prosthesis (VITA BL4). Aligned, symmetrical.', 'natural white RGB(250,249,248)', ''),
+  protese_a1:    buildPrompt('Replace all teeth with full prosthesis (VITA A1). Ideal aligned shape.', 'warm ivory RGB(248,244,232)', ''),
+  protese_a2:    buildPrompt('Replace all teeth with full prosthesis (VITA A2). Natural ideal shape.', 'classic warm ivory RGB(243,236,216)', ''),
+  protese_a3:    buildPrompt('Replace all teeth with full prosthesis (VITA A3).', 'warm golden RGB(234,222,192)', ''),
+  protese_b1:    buildPrompt('Replace all teeth with full prosthesis (VITA B1).', 'light pink-white RGB(250,245,242)', ''),
+  protese_b2:    buildPrompt('Replace all teeth with full prosthesis (VITA B2).', 'warm pinkish RGB(245,236,228)', ''),
+  protese_c1:    buildPrompt('Replace all teeth with full prosthesis (VITA C1).', 'cool light gray RGB(240,237,232)', ''),
+  protese_d2:    buildPrompt('Replace all teeth with full prosthesis (VITA D2).', 'warm ochre RGB(238,226,198)', ''),
+  clareamento:   buildPrompt('Whiten the teeth only. Do not change tooth shape or size.', 'brilliant clean white RGB(248,245,235)', ''),
+  ortodontia:    buildPrompt('Align and straighten all teeth. Do not change tooth color.', 'same original color', ''),
+  aumento_coroa: buildPrompt('Show more of the tooth crown by raising the gum line slightly. Do not change color.', 'same original color', ''),
+  harmonizacao:  buildPrompt('Align teeth and whiten them. Keep natural proportions.', 'bright natural white RGB(251,251,253)', ''),
+};
 
 async function generateSmile() {
   if (!originalFile) return showError('Envie a foto do paciente primeiro.');
@@ -1037,20 +1039,19 @@ async function generateSmile() {
     }, 1000);
 
     // Chama OpenAI gpt-image-2 diretamente
-    const prompt = (STYLE_PROMPTS[selectedStyle] || STYLE_PROMPTS['harmonizacao']) + PRESERVE;
     const extra = document.getElementById('extraPrompt').value.trim();
-    const fullPrompt = extra ? prompt + ' Additional instructions: ' + extra : prompt;
+    const basePrompt = STYLE_PROMPTS[selectedStyle] || STYLE_PROMPTS['harmonizacao'];
+    const fullPrompt = extra ? basePrompt + ' Additional detail: ' + extra : basePrompt;
 
-    // Cria imagem com máscara: região dos dentes transparente (editável pela IA)
-    setProgress(true, 40, 'Criando máscara dos dentes...');
-    const maskedBlob = await createDentalMask(originalFile);
+    setProgress(true, 40, 'Preparando envio...');
+    const pngBlob = await resizeImage(originalFile, 1024, 1024);
 
     const formData = new FormData();
     formData.append('model', 'gpt-image-2');
     formData.append('prompt', fullPrompt);
     formData.append('n', '1');
     formData.append('size', '1024x1024');
-    formData.append('image', maskedBlob, 'smile.png');
+    formData.append('image', pngBlob, 'smile.png');
 
     const response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
