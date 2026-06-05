@@ -972,7 +972,7 @@ const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd
 const OPENAI_KEY = _k.join('');
 
 function buildPrompt(treatment, color, extra) {
-  return `Dental treatment result: ${treatment} Make the teeth ${color} — dramatically whiter, bright and natural-looking like porcelain. Teeth should be visibly transformed. Face, skin, lips, gums, nose, eyes, hair and background must be 100% identical to the original photo. Only teeth color changes. Photorealistic.${extra ? ' ' + extra : ''}`;
+  return `Professional dental photo after ${treatment} The teeth are now strikingly ${color}, luminous and perfectly aligned — like polished porcelain. The transformation is dramatic and visible. Everything else in the photo is exactly the same: face, skin, lips, gums, nose, eyes, hair, background, lighting. Only the tooth enamel color has changed. Photorealistic dental result.${extra ? ' ' + extra : ''}`;
 }
 
 const STYLE_PROMPTS = {
