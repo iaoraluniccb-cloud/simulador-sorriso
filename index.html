@@ -1035,56 +1035,60 @@ async function compositeTeeth(originalURL, aiURL, box) {
   const W = origImg.naturalWidth, H = origImg.naturalHeight;
   const AW = aiImg.naturalWidth, AH = aiImg.naturalHeight;
 
+  // Canvas principal com foto original
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
-
-  // 1. Base: foto original 100% intacta
   ctx.drawImage(origImg, 0, 0, W, H);
 
-  if (box) {
-    // box.x/y/w/h estão no espaço da imagem original (W×H)
-    // A IA retorna AW×AH — precisamos mapear box para o espaço da IA
-    const pad = Math.round(W * 0.015);
-    // Região no espaço original
-    const rx = Math.max(0, box.x - pad);
-    const ry = Math.max(0, box.y - pad);
-    const rw = Math.min(W - rx, box.w + pad * 2);
-    const rh = Math.min(H - ry, box.h + pad * 2);
-
-    // Região equivalente no espaço da IA (escala proporcional)
-    const sx = (rx / W) * AW;
-    const sy = (ry / H) * AH;
-    const sw = (rw / W) * AW;
-    const sh = (rh / H) * AH;
-
-    // 2. Cria offscreen com feather para blend suave nas bordas
-    const off = document.createElement('canvas');
-    off.width = W; off.height = H;
-    const octx = off.getContext('2d');
-    // Desenha a IA escalada para o tamanho original
-    octx.drawImage(aiImg, sx, sy, sw, sh, rx, ry, rw, rh);
-
-    // 3. Aplica a região da IA com feather: desenha em canvas extra, blur, recorta
-    const feather = Math.round(Math.min(rw, rh) * 0.12);
-    const mask = document.createElement('canvas');
-    mask.width = W; mask.height = H;
-    const mctx = mask.getContext('2d');
-    mctx.filter = `blur(${feather}px)`;
-    mctx.fillStyle = 'white';
-    mctx.fillRect(rx + feather, ry + feather, rw - feather*2, rh - feather*2);
-    mctx.filter = 'none';
-
-    // Usa o mask para composite: multiplica alpha
-    octx.globalCompositeOperation = 'destination-in';
-    octx.drawImage(mask, 0, 0);
-
-    // 4. Sobrepõe a região processada na foto original
-    ctx.drawImage(off, 0, 0);
-  } else {
-    // Fallback sem box: IA completa
+  if (!box) {
+    // Sem detecção: sobrepõe IA inteira (fallback)
     ctx.drawImage(aiImg, 0, 0, W, H);
+    return canvas.toDataURL('image/png');
   }
+
+  // --- Região dos dentes no espaço original ---
+  const pad = Math.round(W * 0.018);
+  const rx = Math.max(0, box.x - pad);
+  const ry = Math.max(0, box.y - pad);
+  const rw = Math.min(W - rx, box.w + pad * 2);
+  const rh = Math.min(H - ry, box.h + pad * 2);
+
+  // --- Região equivalente no espaço da IA ---
+  // A IA foi gerada a partir de uma imagem 1024x1024 (resizeImage força isso)
+  // então a proporção é sempre W:1024 e H:1024
+  const scaleX = AW / W;
+  const scaleY = AH / H;
+  const sx = rx * scaleX;
+  const sy = ry * scaleY;
+  const sw = rw * scaleX;
+  const sh = rh * scaleY;
+
+  // --- Extrai só a região dos dentes da IA em canvas temporário ---
+  const patch = document.createElement('canvas');
+  patch.width = rw; patch.height = rh;
+  const pctx = patch.getContext('2d');
+  pctx.drawImage(aiImg, sx, sy, sw, sh, 0, 0, rw, rh);
+
+  // --- Cria máscara de alpha com gradiente radial para blend natural ---
+  // Centro do patch, fade nas bordas
+  const alphaCanvas = document.createElement('canvas');
+  alphaCanvas.width = rw; alphaCanvas.height = rh;
+  const actx = alphaCanvas.getContext('2d');
+  const cx = rw / 2, cy = rh / 2;
+  const grad = actx.createRadialGradient(cx, cy, Math.min(cx,cy)*0.3, cx, cy, Math.max(cx,cy)*1.1);
+  grad.addColorStop(0,   'rgba(255,255,255,1)');
+  grad.addColorStop(0.7, 'rgba(255,255,255,1)');
+  grad.addColorStop(1,   'rgba(255,255,255,0)');
+  actx.fillStyle = grad;
+  actx.fillRect(0, 0, rw, rh);
+
+  // Aplica alpha ao patch
+  pctx.globalCompositeOperation = 'destination-in';
+  pctx.drawImage(alphaCanvas, 0, 0);
+
+  // --- Cola o patch sobre a foto original ---
+  ctx.drawImage(patch, rx, ry);
 
   return canvas.toDataURL('image/png');
 }
