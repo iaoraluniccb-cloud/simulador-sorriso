@@ -972,28 +972,28 @@ const _k = ['sk-proj-zvzRRHPJ_BXMc_XM','prFCeWqN2zJnBLm-Xv3cFn','InlddUNQhU9QRCd
 const OPENAI_KEY = _k.join('');
 
 const STYLE_PROMPTS = {
-  faceta_bl1: "You are a master cosmetic dentist retouching a dental photo. TASK: Simulate ultra-premium porcelain veneers VITA BL1 — the absolute whitest Hollywood smile. MANDATORY SHAPE CHANGES: Lengthen each tooth by 15-20%, correct all crowding and rotation, perfectly align the midline, create a gentle downward smile arc, make central incisors wider and dominant, lateral incisors slightly smaller, natural pointed canines. Individual teeth must be clearly distinguishable with natural inter-dental grooves. SURFACE: Realistic layered ceramic texture, specular highlight, translucent incisal edges. COLOR: RGB(254,254,255) pure brilliant white. Keep face, gums, lips, skin pixel-perfect identical — ONLY teeth change shape and color.",
-  faceta_bl2: "Simulate premium ceramic veneers VITA BL2. SHAPE: Lengthen teeth 12-18%, align perfectly, correct crowding, create smile arc, natural proportions. COLOR: RGB(252,252,254) bright white. Realistic ceramic texture. Keep everything else identical.",
-  faceta_bl3: "Simulate ceramic veneers VITA BL3. SHAPE: Lengthen teeth 10-15%, align and straighten, natural proportions. COLOR: RGB(250,250,252) bright natural white. Keep face identical.",
-  faceta_a1:  "Simulate elegant ivory ceramic veneers VITA A1. SHAPE: Lengthen 10-15%, align, correct crowding. COLOR: RGB(248,244,232) warm ivory. Natural feminine result. Keep face identical.",
-  faceta_b1:  "Simulate pink-white ceramic veneers VITA B1. SHAPE: Lengthen 10-15%, align. COLOR: RGB(250,245,242) soft pinkish white. Keep face identical.",
-  lente_contato: "Simulate ultra-thin 0.3mm contact lens veneers. SHAPE: Minimal reshaping, mostly preserve original shape but perfect alignment. COLOR: RGB(255,255,255) pure glass-like white. Keep face identical.",
-  protese_bl3: "Simulate a complete full-arch prosthesis VITA BL3. SHAPE: Completely redesign ALL teeth — 2 central incisors (wider, squarish), 2 lateral incisors (slightly smaller), 2 canines (pointed), premolars at sides. All perfectly aligned and symmetrical. COLOR: RGB(252,252,255) bright bleached white. Keep face identical.",
-  protese_bl4: "Simulate complete prosthesis VITA BL4. SHAPE: Redesign all teeth with ideal prosthetic morphology — perfectly aligned, symmetrical arches. COLOR: RGB(250,249,248) natural bleached white. Keep face identical.",
-  protese_a1:  "Simulate prosthesis VITA A1. SHAPE: Ideal prosthetic morphology, all teeth redesigned. COLOR: RGB(248,244,232) warm ivory. Keep face identical.",
-  protese_a2:  "Simulate prosthesis VITA A2 — most natural shade. SHAPE: Redesign all teeth with ideal prosthetic shape, perfectly aligned. COLOR: RGB(243,236,216) classic warm ivory. Keep face identical.",
-  protese_a3:  "Simulate prosthesis VITA A3. SHAPE: Ideal prosthetic morphology. COLOR: RGB(234,222,192) warm golden natural. Keep face identical.",
-  protese_b1:  "Simulate prosthesis VITA B1. SHAPE: Ideal prosthetic morphology. COLOR: RGB(250,245,242) light pink warmth. Keep face identical.",
-  protese_b2:  "Simulate prosthesis VITA B2. SHAPE: Ideal prosthetic morphology. COLOR: RGB(245,236,228) warm pinkish. Keep face identical.",
-  protese_c1:  "Simulate prosthesis VITA C1. SHAPE: Ideal morphology. COLOR: RGB(240,237,232) cool gray undertone. Keep face identical.",
-  protese_d2:  "Simulate prosthesis VITA D2. SHAPE: Ideal morphology. COLOR: RGB(238,226,198) warm ochre. Keep face identical.",
-  clareamento: "Apply maximum professional teeth whitening. ONLY change color — no shape changes. Remove all stains and yellowing. TARGET: VITA A1/BL4, RGB(248,245,235) brilliant clean white. Keep shape, gums, face identical.",
-  ortodontia:  "Perfectly align and straighten ALL teeth — correct every crowding, rotation, spacing. Result must look like final day of orthodontic treatment. DO NOT change color or shape morphology — only position. Keep face identical.",
-  aumento_coroa: "Simulate crown lengthening — raise gum line evenly to expose 1.5-2mm more crown on all teeth. Do NOT change color or position. Keep face identical.",
-  harmonizacao: "Complete smile makeover: align all teeth, correct crowding, lengthen by 10%, whiten to VITA BL2/BL3. Natural harmonious result. Keep face identical.",
+  faceta_bl1: "Dental photo retouching. Modify ONLY the visible tooth enamel surfaces inside the open mouth. DO NOT change anything outside the teeth area. TEETH CHANGES: Apply VITA BL1 porcelain veneers — color RGB(254,254,255) pure brilliant white, lengthen each tooth slightly, align midline, smooth inter-dental grooves, ceramic texture with specular highlights. Face, skin, lips, gums, eyes, background: completely unchanged, pixel-perfect.",
+  faceta_bl2: "Dental photo retouching. Modify ONLY the tooth enamel inside the mouth. Apply VITA BL2 ceramic veneers — color RGB(252,252,254) bright white, slight tooth lengthening, aligned. Everything outside teeth: unchanged.",
+  faceta_bl3: "Dental photo retouching. Modify ONLY the tooth enamel inside the mouth. Apply VITA BL3 veneers — color RGB(250,250,252) bright natural white, teeth aligned and lengthened slightly. Face and all other areas: unchanged.",
+  faceta_a1:  "Dental photo retouching. Modify ONLY the tooth enamel. Apply VITA A1 ceramic veneers — color RGB(248,244,232) warm ivory, teeth aligned. Face unchanged.",
+  faceta_b1:  "Dental photo retouching. Modify ONLY the tooth enamel. Apply VITA B1 veneers — color RGB(250,245,242) pinkish white, teeth aligned. Face unchanged.",
+  lente_contato: "Dental photo retouching. Modify ONLY the tooth enamel. Apply ultra-thin contact lens veneers — color RGB(255,255,255) pure white, preserve original tooth shape. Face unchanged.",
+  protese_bl3: "Dental photo retouching. Modify ONLY the visible teeth inside the mouth. Replace with full-arch prosthesis VITA BL3 — color RGB(252,252,255) bright white. Ideal prosthetic tooth shape: uniform, aligned, symmetrical. Face, lips, gums edge, skin: completely unchanged.",
+  protese_bl4: "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA BL4 — color RGB(250,249,248). Ideal shape, aligned. Face unchanged.",
+  protese_a1:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA A1 — color RGB(248,244,232) warm ivory, ideal shape. Face unchanged.",
+  protese_a2:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA A2 — color RGB(243,236,216) classic ivory, ideal aligned shape. Face unchanged.",
+  protese_a3:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA A3 — color RGB(234,222,192) warm golden. Face unchanged.",
+  protese_b1:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA B1 — color RGB(250,245,242). Face unchanged.",
+  protese_b2:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA B2 — color RGB(245,236,228). Face unchanged.",
+  protese_c1:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA C1 — color RGB(240,237,232). Face unchanged.",
+  protese_d2:  "Dental photo retouching. Modify ONLY the teeth. Full prosthesis VITA D2 — color RGB(238,226,198). Face unchanged.",
+  clareamento: "Dental photo retouching. Modify ONLY the tooth color — do NOT change shape. Professional whitening to VITA A1/BL4, color RGB(248,245,235) brilliant white. Remove stains and yellowing. Face, shape of teeth, gums, lips: completely unchanged.",
+  ortodontia:  "Dental photo retouching. Modify ONLY the tooth positions — align and straighten all teeth, correct crowding and rotation. Do NOT change color or tooth shape. Face and all other areas: completely unchanged.",
+  aumento_coroa: "Dental photo retouching. Modify ONLY the gum line — raise it slightly on each tooth to expose more crown. Do NOT change tooth color or position. Face unchanged.",
+  harmonizacao: "Dental photo retouching. Modify ONLY the teeth — align, whiten to VITA BL2 RGB(251,251,253), lengthen slightly. Face, skin, lips: completely unchanged.",
 };
 
-const PRESERVE = " ABSOLUTE RULES: 1) Keep mouth OPEN — lips parted, do NOT close. 2) ONLY modify visible tooth surfaces — face, skin, eyes, nose, hair, background must be pixel-perfect identical. 3) Same person, same pose, same lighting. 4) Individual teeth must be clearly distinguishable. 5) Output must look like a real photograph.";
+const PRESERVE = " CRITICAL RULES — any violation makes this result invalid: (1) The FACE must be 100% identical — same skin, same wrinkles, same eyes, same nose, same lips shape, same everything outside the teeth. (2) Modify ONLY the visible tooth enamel surfaces inside the open mouth. (3) Keep mouth open — do NOT close lips. (4) Individual teeth must be distinguishable with inter-dental grooves. (5) Output must look like a real unedited photograph except for the teeth.";
 
 async function generateSmile() {
   if (!originalFile) return showError('Envie a foto do paciente primeiro.');
